@@ -1,7 +1,7 @@
 FROM node:24.14.0-alpine3.23 AS build
 WORKDIR /workspace
 
-COPY package.json package-lock.json tsconfig.base.json vitest.config.ts ./
+COPY package.json package-lock.json .npmrc tsconfig.base.json vitest.config.ts ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 COPY packages/domain/package.json packages/domain/package.json
