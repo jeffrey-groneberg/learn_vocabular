@@ -17,12 +17,6 @@ colors:
   green-light: "#dcefe7"
   red-light: "#f8dfda"
 typography:
-  display:
-    fontFamily: "'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif"
-    fontSize: "clamp(2.5rem, 12vw, 5.4rem)"
-    lineHeight: 0.95
-    letterSpacing: "-0.05em"
-    fontVariation: "'wght' 780"
   headline:
     fontFamily: "'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif"
     fontSize: "clamp(2rem, 7vw, 3.5rem)"
@@ -138,7 +132,7 @@ components:
 
 Vocabulary Voice Tutor realizes the Creative North Star as a working language specimen cabinet: a warm paper field is ruled at 48px intervals, cobalt frames the application, and word lists become thick-bordered drawers with coral index tabs, measurement ticks, and numbered entries. The shipped PWA icon repeats the same cabinet silhouette in cobalt, yellow, ink navy, and coral, so the world survives from home screen to practice flow.
 
-The system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; oversized vocabulary specimens, compact index labels, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.
+The system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; audio-only practice cues, compact index labels, post-check answer ledgers, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.
 
 Mobile-first safe areas, 44-76px controls, visible coral focus rings, and a reduced-motion override are part of the visual identity, not add-ons. Color marks action and state but never carries correctness alone; every feedback panel includes an icon and explicit copy.
 
@@ -172,7 +166,7 @@ The palette behaves like printed school-lab stock: warm paper and navy ink carry
 - **Warm Stock** (`#f4f0e7`): The page and app-shell ground.
 - **Clean Stock** (`#fffdf7`): Inputs, drawers, sheets, ledgers, and specimen surfaces.
 - **Ink Navy** (`#172038`): Primary body copy and control content.
-- **Annotation Grey** (`#626a78`): Supporting copy, hints, counters, and concealed-answer text.
+- **Annotation Grey** (`#626a78`): Supporting copy, hints, counters, and audio-cue guidance.
 - **Ruler Grey** (`#c9c3b5`): Input strokes, dividers, ruled ticks, and low-emphasis panel borders.
 
 ### Named Rules
@@ -186,12 +180,11 @@ The palette behaves like printed school-lab stock: warm paper and navy ink carry
 **Body Font:** Atkinson Hyperlegible Next Variable, with Atkinson Hyperlegible, system-ui, and sans-serif fallback.
 **Label/Mono Font:** Atkinson Hyperlegible Next Variable; the build has no monospace role.
 
-**Character:** One highly legible variable face gives the learner continuity from an oversized word specimen down to compact measurement labels. Weight and tracking create hierarchy without introducing a decorative display face.
+**Character:** One highly legible variable face gives the learner continuity from page headlines and audio-cue titles down to compact measurement labels. Weight and tracking create hierarchy without introducing a decorative display face.
 
 ### Hierarchy
-- **Display** (`'wght' 780`, `clamp(2.5rem, 12vw, 5.4rem)`, line-height `0.95`, tracking `-0.05em`): The current source word inside the practice specimen only.
 - **Headline** (`'wght' 720`, `clamp(2rem, 7vw, 3.5rem)`, line-height `0.98`, tracking `-0.045em`): Page-level `h1` titles.
-- **Title** (`'wght' 720`, `1.45rem`, line-height `1.08`, tracking `-0.025em`): Drawer names and section-level `h2` titles.
+- **Title** (`'wght' 720`, `1.45rem`, line-height `1.08`, tracking `-0.025em`): Drawer names, section-level `h2` titles, audio-cue headings, and post-check answer-ledger words.
 - **Body** (`400`, `1rem`, normal line-height): Default reading and explanatory copy; selected ledes lengthen to line-height `1.5`.
 - **Field Label** (`680`, `1rem`): Form labels and direct instructions.
 - **Specimen Meta** (`'wght' 800`, about `0.72-0.76rem`, tracking `0.08-0.1em`): Language codes, row numbers, table headings, and practice mode/direction metadata.
@@ -199,8 +192,6 @@ The palette behaves like printed school-lab stock: warm paper and navy ink carry
 
 ### Named Rules
 **The One-Face Rule.** Keep every role in Atkinson Hyperlegible Next. Hierarchy comes from the shipped variable weights, scale, and tracking, not from adding a display or monospace family.
-
-**The Specimen Scale Rule.** The live vocabulary word owns the largest type. Page headlines stop at the smaller headline tier so the learner's current word remains the visual specimen.
 
 **The Index Label Rule.** Small tracked capitals belong only to real cabinet metadata such as language codes, directions, modes, row numbers, and table headings. Do not invent eyebrow copy merely to reuse the style.
 
@@ -210,7 +201,7 @@ The app is a mobile-first vertical shell with a safe-area-aware header, flexible
 
 The recurring spatial rhythm is approximately `0.45 / 0.7 / 0.8 / 1 / 1.2 / 1.5rem`, with `2-3px` structural strokes doing as much grouping work as whitespace. Drawer cards use `repeat(auto-fit, minmax(min(100%, 285px), 1fr))` with a `1.4rem` gap. Safe-area insets are included at every screen edge that can meet iPhone chrome.
 
-At `640px` and wider, bilingual word rows and mode choices become two-column layouts, practice actions split into a `0.72fr / 1.28fr` pair, and the specimen gains more padding. At `520px` and narrower, page headings stack, paired result actions collapse to one column, and editor actions become a sticky bottom bar. The supported canvas never shrinks below `320px`; the installed PWA declares portrait orientation.
+At `640px` and wider, bilingual word rows and mode choices become two-column layouts, the replay and English-pronunciation actions split into a `0.72fr / 1.28fr` pair after the first listen, and the specimen gains more padding. At `520px` and narrower, page headings stack, paired result actions collapse to one column, and editor actions become a sticky bottom bar. The supported canvas never shrinks below `320px`; the installed PWA declares portrait orientation.
 
 ## Elevation & Depth
 
@@ -237,9 +228,9 @@ Coral top tabs are the recurring silhouette on important trays: `13px` high and 
 
 ### Buttons
 - **Primary:** Cobalt fill, white text, `2px` navy border, `8px` radius, `0.7rem 1rem` padding, and at least `48px` height. It presses down `2px`, shortens its shadow, receives a `3px` coral focus ring with `3px` offset, and drops to `0.5` opacity when disabled.
-- **Secondary:** Clean Stock fill, navy text and `2px` navy border at the same size and radius. It is the paired alternative for cancel, listen, retry, and back-to-list actions.
+- **Secondary:** Clean Stock fill, navy text and `2px` navy border at the same size and radius. It carries cancel, the initially solo and later replayable Listen action, retry, and back-to-list actions.
 - **Text / Back:** Transparent with cobalt text and at least `44px` height. Danger text shifts to the shipped dark red literal; icon-only actions remain `44-46px` square.
-- **Record / Stop:** The record control is the largest action at `76px`, using Recording Coral and a `3px` navy border. The stop action switches to Specimen Yellow inside a full-cobalt recording state.
+- **Record / Stop:** After the first listen, the record control is the largest action at `76px`, uses Recording Coral with a `3px` navy border, and always requests English pronunciation. The stop action switches to Specimen Yellow inside a full-cobalt recording state.
 
 ### Inputs / Fields
 - **Style:** Full-width Clean Stock field, `2px` Ruler Grey border, `8px` radius, `0.72rem 0.85rem` padding, and at least `52px` height.
@@ -258,7 +249,7 @@ Each reusable word-list drawer is Clean Stock with a `3px` navy frame, square co
 Mode cards are at least `88px` tall with a `2px` grey border and a hidden native radio. Selected cards switch to Selection Blue with cobalt border and navy text; focus lands on the entire label through `:has(input:focus-visible)`. Direction rows use the same state grammar at a denser `51px` height.
 
 ### Practice Specimen
-The signature learning surface is a square Clean Stock sheet with a `3px` navy frame, the shared specimen-sheet shadow, and a coral top tab. It combines compact direction/mode metadata, the oversized source word, a revealed or dashed concealed target, and a 17-tick measurement line before the current interaction state.
+The signature learning surface is a square Clean Stock sheet with a `3px` navy frame, the shared specimen-sheet shadow, and a coral top tab. It presents compact direction/mode metadata, an audio-only cue, and a 17-tick measurement line; neither English nor German orthography appears before checking. Listen is initially the only practice action and remains replayable after first use, when the Speak English control appears and English pronunciation is always assessed. English-to-German then collects German writing followed by English writing; German-to-English collects English writing only. Canonical English and German words appear only in the post-check answer ledger.
 
 ### Feedback Panels
 Feedback panels are square, bordered, icon-led rows with `0.9rem` padding. Neutral speech feedback uses Selection Blue, correct feedback uses Correct Wash and green, minor typo uses the shipped yellow wash and ochre literals, and incorrect/error feedback uses Error Wash with coral. The words state the outcome; color only reinforces it.

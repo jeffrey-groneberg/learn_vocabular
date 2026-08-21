@@ -11,9 +11,11 @@ export type PracticePhase =
 
 export interface PracticeState {
   phase: PracticePhase
+  phaseAfterPlayback: 'ready' | 'revealed'
   itemIndex: number
   totalItems: number
   mode: PracticeMode
+  hasListened: boolean
   error: string | null
 }
 
@@ -47,7 +49,15 @@ export function initialPracticeState(
     throw new Error('Practice requires at least one item')
   }
 
-  return { phase: 'ready', itemIndex: 0, totalItems, mode, error: null }
+  return {
+    phase: 'ready',
+    phaseAfterPlayback: 'ready',
+    itemIndex: 0,
+    totalItems,
+    mode,
+    hasListened: false,
+    error: null,
+  }
 }
 
 export function practiceReducer(
@@ -55,7 +65,11 @@ export function practiceReducer(
   event: PracticeEvent,
 ): PracticeState {
   if (event.type === 'RETRY' && state.error) {
-    return { ...state, phase: 'ready', error: null }
+    return { ...state, error: null }
+  }
+
+  if (event.type === 'RECORD' && !state.hasListened) {
+    return state
   }
 
   if (!allowedEvents[state.phase].includes(event.type)) {
@@ -64,9 +78,18 @@ export function practiceReducer(
 
   switch (event.type) {
     case 'PLAY':
-      return { ...state, phase: 'playing', error: null }
+      return {
+        ...state,
+        phase: 'playing',
+        phaseAfterPlayback: state.phase === 'revealed' ? 'revealed' : 'ready',
+        error: null,
+      }
     case 'PLAY_FINISHED':
-      return { ...state, phase: 'ready' }
+      return {
+        ...state,
+        phase: state.phaseAfterPlayback,
+        hasListened: true,
+      }
     case 'RECORD':
       return { ...state, phase: 'recording', error: null }
     case 'CANCEL_RECORDING':
@@ -81,15 +104,22 @@ export function practiceReducer(
       const nextIndex = state.itemIndex + 1
       return nextIndex >= state.totalItems
         ? { ...state, phase: 'complete' }
-        : { ...state, phase: 'ready', itemIndex: nextIndex, error: null }
+        : {
+            ...state,
+            phase: 'ready',
+            phaseAfterPlayback: 'ready',
+            itemIndex: nextIndex,
+            hasListened: false,
+            error: null,
+          }
     }
     case 'FAIL':
-      return { ...state, phase: 'ready', error: event.message }
+      return {
+        ...state,
+        phase: state.phase === 'playing' ? state.phaseAfterPlayback : 'ready',
+        error: event.message,
+      }
     case 'RETRY':
       return state
   }
-}
-
-export function mayRevealTarget(mode: PracticeMode, phase: PracticePhase): boolean {
-  return mode === 'learn' || phase === 'revealed' || phase === 'complete'
 }

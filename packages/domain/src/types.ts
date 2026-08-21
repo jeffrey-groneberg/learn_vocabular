@@ -3,6 +3,7 @@ export const supportedLocales = ['en-GB', 'de-DE'] as const
 export type SupportedLocale = (typeof supportedLocales)[number]
 export type PracticeDirection = 'english-to-german' | 'german-to-english' | 'mixed'
 export type PracticeMode = 'learn' | 'test'
+export type VocabularyLanguage = 'english' | 'german'
 
 export interface VocabularyEntry {
   id: string
@@ -22,9 +23,17 @@ export interface ExerciseSet {
 
 export interface PracticePrompt {
   entryId: string
-  source: string
-  target: string
-  targetLocale: SupportedLocale
+  direction: Exclude<PracticeDirection, 'mixed'>
+  words: Record<VocabularyLanguage, PracticeWord>
+  cueLanguage: VocabularyLanguage
+  spokenLanguage: 'english'
+  spellingLanguages: readonly VocabularyLanguage[]
+}
+
+export interface PracticeWord {
+  language: VocabularyLanguage
+  text: string
+  locale: SupportedLocale
 }
 
 export type SpokenOutcome =
@@ -44,6 +53,8 @@ export interface AttemptSummary {
   mode: PracticeMode
   direction: Exclude<PracticeDirection, 'mixed'>
   spokenOutcome: SpokenOutcome
+  /** English spelling is the primary written outcome in every direction. */
   spellingOutcome: SpellingOutcome
+  germanSpellingOutcome?: SpellingOutcome
   attemptedAt: string
 }

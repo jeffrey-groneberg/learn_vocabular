@@ -1,17 +1,20 @@
 # Vocabulary Voice Tutor
 
 A private, mobile-first English and German vocabulary tutor for one learner.
-Word lists and progress stay in IndexedDB on the iPhone. Azure AI Speech reads
-the expected answer and checks a short, deliberate pronunciation attempt;
+Word lists and progress stay in IndexedDB on the iPhone. Azure AI Speech plays
+an audio-only cue and checks a short, deliberate English pronunciation attempt;
 recorded audio is kept only in memory for that request and is then discarded.
 
 ## What the learner can do
 
 - Create and edit English/German word or short-phrase lists.
 - Practise English → German, German → English, or a mix.
-- Use **Learn** mode to listen first or **Test** mode to recall before reveal.
-- Record one bounded pronunciation attempt and receive calm retry guidance.
-- Type the answer locally. Exact spelling passes; one edit is shown as a minor
+- Begin every word with a replayable audio cue while both written words stay
+  hidden.
+- Record the English word for pronunciation feedback in every direction.
+- In English → German, write the German translation and the English word. In
+  German → English, write the English word.
+- Check spelling locally. Exact spelling passes; one edit is shown as a minor
   typo; larger differences are marked for another look.
 - Install the PWA on an iPhone and keep all learning records on that device.
 

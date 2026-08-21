@@ -39,6 +39,7 @@ describe('local vocabulary database', () => {
       direction: 'english-to-german',
       spokenOutcome: 'correct',
       spellingOutcome: 'correct',
+      germanSpellingOutcome: 'correct',
       attemptedAt: '2026-01-01T00:01:00.000Z',
     })
 

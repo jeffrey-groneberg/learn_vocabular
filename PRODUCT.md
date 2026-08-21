@@ -36,18 +36,24 @@ evaluation while keeping the learner's library and progress on the iPhone.
 
 - The learner creates or edits English/German exercise sets on the iPhone.
 - Practice runs in English-to-German, German-to-English, or mixed direction.
-- Learn mode can reveal and play the target before recall.
-- Test mode withholds the target and recognized transcript until spelling is
-  complete.
+- Every word starts as an audio-only cue with replayable listening; neither
+  written word appears before pronunciation and spelling are complete.
+- English-to-German plays English, assesses spoken English, then collects the
+  German translation and English spelling.
+- German-to-English plays German, assesses spoken English, then collects the
+  English spelling.
+- Learn mode reports the pronunciation score; Test mode withholds it until the
+  canonical pair is revealed.
 - Speech operations require a network connection; editing and locally cached
   app-shell use remain available offline.
 - A family access code unlocks a fixed 30-day browser session.
 
 ## Capabilities and Constraints
 
-- British English (`en-GB`) and German (`de-DE`) neural text-to-speech.
-- Scripted Azure Speech Pronunciation Assessment with a strict `80/100` pass
-  threshold.
+- British English (`en-GB`) and German (`de-DE`) neural text-to-speech for the
+  direction-specific audio cue.
+- Scripted English (`en-GB`) Azure Speech Pronunciation Assessment with a strict
+  `80/100` pass threshold in every direction.
 - Exact spelling passes; Damerau-Levenshtein distance one is accepted as a
   minor typo while the correction is shown.
 - Exercise sets, preferences, attempts, and progress stay in IndexedDB on the

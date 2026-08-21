@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-21T08:30:21.183Z",
+  "generatedAt": "2026-08-21T11:05:10.962Z",
   "title": "Design System: Vocabulary Voice Tutor",
   "extensions": {
     "colorMeta": {
@@ -202,17 +202,13 @@
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Vocabulary Specimen",
-        "purpose": "The current practice word only; it is the largest type in the system."
-      },
       "headline": {
         "displayName": "Page Headline",
         "purpose": "Page-level h1 titles."
       },
       "title": {
         "displayName": "Drawer Title",
-        "purpose": "Drawer names and section-level h2 titles."
+        "purpose": "Drawer names, section-level h2 titles, audio-cue headings, and post-check answer-ledger words."
       },
       "body": {
         "displayName": "Body",
@@ -306,7 +302,7 @@
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "The clean-stock alternative for cancel, listen, retry, and return actions.",
+      "description": "The clean-stock alternative for cancel, the initially solo and later replayable Listen action, retry, and return actions.",
       "html": "<button class=\"ds-secondary-button\"><svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg>Word lists</button>",
       "css": ".ds-secondary-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; padding: 0.7rem 1rem; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--paper-light, #fffdf7); color: var(--cobalt-dark, #102454); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-secondary-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; } .ds-secondary-button:disabled { cursor: not-allowed; opacity: 0.5; }"
     },
@@ -346,16 +342,16 @@
       "name": "Practice Specimen",
       "kind": "custom",
       "refersTo": "practice-specimen",
-      "description": "The signature sheet that presents direction, source word, target state, and measurement line.",
-      "html": "<section class=\"ds-specimen\"><div class=\"ds-specimen__meta\"><span>EN -&gt; DE</span><span>LEARN</span></div><p class=\"ds-specimen__label\">Word pair</p><p class=\"ds-specimen__word\">butterfly</p><div class=\"ds-specimen__target ds-specimen__target--visible\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/></svg><strong>Schmetterling</strong></div><div class=\"ds-specimen__measure\" aria-hidden=\"true\"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></section>",
-      "css": ".ds-specimen { position: relative; padding: 1.2rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 0; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); box-shadow: 6px 10px 24px rgba(16, 36, 84, 0.16); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-specimen::before { content: ''; width: 72px; height: 13px; position: absolute; top: 0; right: 35px; border: 3px solid var(--cobalt-dark, #102454); border-top: 0; background: var(--coral, #e54b2b); } .ds-specimen__meta { display: flex; justify-content: space-between; margin: 0.35rem 0 2rem; color: var(--cobalt, #1747d1); font-size: 0.72rem; letter-spacing: 0.1em; font-variation-settings: 'wght' 800; } .ds-specimen__label { margin: 0 0 0.45rem; color: var(--muted, #626a78); font-size: 0.8rem; letter-spacing: 0.04em; font-variation-settings: 'wght' 700; } .ds-specimen__word { margin: 0 0 0.8rem; overflow-wrap: anywhere; color: var(--cobalt-dark, #102454); font-size: clamp(2.5rem, 12vw, 5.4rem); line-height: 0.95; letter-spacing: -0.05em; font-variation-settings: 'wght' 780; } .ds-specimen__target { min-height: 52px; display: flex; align-items: center; gap: 0.7rem; color: var(--muted, #626a78); } .ds-specimen__target--visible { color: var(--coral, #e54b2b); } .ds-specimen__target strong { overflow-wrap: anywhere; color: var(--ink, #172038); font-size: clamp(1.55rem, 6vw, 2.6rem); } .ds-specimen__measure { display: flex; align-items: start; justify-content: space-between; height: 20px; margin: 1.4rem 0; border-top: 2px solid var(--rule, #c9c3b5); } .ds-specimen__measure span { width: 1px; height: 7px; background: var(--rule, #c9c3b5); } .ds-specimen__measure span:nth-child(4n + 1) { height: 12px; }"
+      "description": "The signature sheet shows no English or German orthography before checking: Listen starts as the sole action and stays replayable; English pronunciation always follows; EN→DE collects German then English writing, DE→EN English writing; canonical words appear only in the post-check ledger.",
+      "html": "<section class=\"ds-practice-specimen\"><div class=\"ds-practice-meta\"><span>EN -&gt; DE</span><span>LEARN</span></div><p class=\"ds-prompt-label\">Audio cue</p><div class=\"ds-audio-cue\"><svg viewBox=\"0 0 24 24\" width=\"44\" height=\"44\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 14a8 8 0 0 1 16 0\"/><path d=\"M18 19c0 1.1-.9 2-2 2h-1v-7h3a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2Z\"/><path d=\"M6 19c-1.1 0-2-.9-2-2v-1a2 2 0 0 1 2-2h3v7H6Z\"/></svg><div><strong>Listen to the English word</strong><small>No English or German spelling appears until your checks are complete.</small></div></div><div class=\"ds-measurement-line\" aria-hidden=\"true\"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class=\"ds-practice-actions\"><button class=\"ds-listen-button\" type=\"button\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M11 5 6 9H2v6h4l5 4Z\"/><path d=\"M15.5 8.5a5 5 0 0 1 0 7\"/><path d=\"M18.5 5.5a9 9 0 0 1 0 13\"/></svg>Listen</button></div></section>",
+      "css": ".ds-practice-specimen { position: relative; padding: 1.2rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 0; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); box-shadow: 6px 10px 24px rgba(16, 36, 84, 0.16); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-practice-specimen::before { content: ''; width: 72px; height: 13px; position: absolute; top: 0; right: 35px; border: 3px solid var(--cobalt-dark, #102454); border-top: 0; background: var(--coral, #e54b2b); } .ds-practice-meta { display: flex; justify-content: space-between; margin: 0.35rem 0 2rem; color: var(--cobalt, #1747d1); font-size: 0.72rem; letter-spacing: 0.1em; font-variation-settings: 'wght' 800; } .ds-prompt-label { margin: 0 0 0.45rem; color: var(--muted, #626a78); font-size: 0.8rem; letter-spacing: 0.04em; font-variation-settings: 'wght' 700; } .ds-audio-cue { min-height: 150px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 1rem; padding: 1.2rem; border: 2px dashed var(--rule, #c9c3b5); background: var(--paper, #f4f0e7); color: var(--cobalt-dark, #102454); } .ds-audio-cue > svg { color: var(--cobalt, #1747d1); } .ds-audio-cue strong, .ds-audio-cue small { display: block; } .ds-audio-cue strong { font-size: 1.45rem; line-height: 1.08; font-variation-settings: 'wght' 720; } .ds-audio-cue small { margin-top: 0.45rem; color: var(--muted, #626a78); font-size: 1rem; line-height: 1.4; } .ds-measurement-line { height: 20px; display: flex; align-items: start; justify-content: space-between; margin: 1.4rem 0; border-top: 2px solid var(--rule, #c9c3b5); } .ds-measurement-line span { width: 1px; height: 7px; background: var(--rule, #c9c3b5); } .ds-measurement-line span:nth-child(4n + 1) { height: 12px; } .ds-practice-actions { display: grid; gap: 0.8rem; } .ds-listen-button { min-height: 56px; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; padding: 0.7rem 1rem; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--paper-light, #fffdf7); color: var(--cobalt-dark, #102454); font: inherit; font-size: 1.04rem; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-listen-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; }"
     },
     {
       "name": "Record Button",
       "kind": "button",
       "refersTo": "record-button",
-      "description": "The large recording action that makes the microphone step unmistakable.",
-      "html": "<button class=\"ds-record-button\"><svg viewBox=\"0 0 24 24\" width=\"27\" height=\"27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"/><path d=\"M12 19v3\"/></svg><span>Speak answer</span><small>Up to 8 seconds</small></button>",
+      "description": "The large post-listen action that always starts English pronunciation assessment.",
+      "html": "<button class=\"ds-record-button\"><svg viewBox=\"0 0 24 24\" width=\"27\" height=\"27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"/><path d=\"M12 19v3\"/></svg><span>Speak English</span><small>Say the English word · Up to 8 seconds</small></button>",
       "css": ".ds-record-button { min-height: 76px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; justify-items: start; column-gap: 0.75rem; padding: 0.7rem 1rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--coral-action, #b3311d); color: #fff; box-shadow: 0 5px 12px rgba(16, 36, 84, 0.26); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-record-button svg { grid-row: 1 / 3; } .ds-record-button span { align-self: end; font-size: 1.08rem; } .ds-record-button small { align-self: start; color: #fff; font-size: 0.75rem; } .ds-record-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; } .ds-record-button:disabled { cursor: not-allowed; opacity: 0.5; }"
     },
     {
@@ -369,7 +365,7 @@
   ],
   "narrative": {
     "northStar": "Language Specimen Cabinet",
-    "overview": "Vocabulary Voice Tutor realizes the Creative North Star as a working language specimen cabinet: a warm paper field is ruled at 48px intervals, cobalt frames the application, and word lists become thick-bordered drawers with coral index tabs, measurement ticks, and numbered entries. The shipped PWA icon repeats the same cabinet silhouette in cobalt, yellow, ink navy, and coral, so the world survives from home screen to practice flow.\n\nThe system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; oversized vocabulary specimens, compact index labels, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.\n\nMobile-first safe areas, 44-76px controls, visible coral focus rings, and a reduced-motion override are part of the visual identity, not add-ons. Color marks action and state but never carries correctness alone; every feedback panel includes an icon and explicit copy.",
+    "overview": "Vocabulary Voice Tutor realizes the Creative North Star as a working language specimen cabinet: a warm paper field is ruled at 48px intervals, cobalt frames the application, and word lists become thick-bordered drawers with coral index tabs, measurement ticks, and numbered entries. The shipped PWA icon repeats the same cabinet silhouette in cobalt, yellow, ink navy, and coral, so the world survives from home screen to practice flow.\n\nThe system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; audio-only practice cues, compact index labels, post-check answer ledgers, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.\n\nMobile-first safe areas, 44-76px controls, visible coral focus rings, and a reduced-motion override are part of the visual identity, not add-ons. Color marks action and state but never carries correctness alone; every feedback panel includes an icon and explicit copy.",
     "keyCharacteristics": [
       "Warm paper stock with a faint 48px vertical ruling.",
       "Cobalt cabinet framing with ink-navy structure and coral index tabs.",
@@ -392,11 +388,6 @@
       {
         "name": "The One-Face Rule",
         "body": "Keep every role in Atkinson Hyperlegible Next. Hierarchy comes from the shipped variable weights, scale, and tracking, not from adding a display or monospace family.",
-        "section": "typography"
-      },
-      {
-        "name": "The Specimen Scale Rule",
-        "body": "The live vocabulary word owns the largest type. Page headlines stop at the smaller headline tier so the learner's current word remains the visual specimen.",
         "section": "typography"
       },
       {

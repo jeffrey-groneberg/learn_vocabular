@@ -1,21 +1,22 @@
 import '@fontsource-variable/atkinson-hyperlegible-next'
 import {
+  createPracticePrompt,
   gradeSpelling,
   initialPracticeState,
-  mayRevealTarget,
   practiceReducer,
   type AttemptSummary,
   type ExerciseSet,
   type PracticeDirection,
   type PracticeMode,
   type PracticePrompt,
+  type PracticeWord,
   type SpellingOutcome,
   type SpokenOutcome,
   type VocabularyEntry,
+  type VocabularyLanguage,
 } from '@vocabulary/domain'
 import {
   ArrowLeft,
-  ArrowDownRight,
   BookOpen,
   Check,
   ChevronRight,
@@ -524,7 +525,7 @@ function PracticeSetup({
             <BookOpen size={24} aria-hidden="true" />
             <span>
               <strong>Learn</strong>
-              <small>Listen first, then speak and spell.</small>
+              <small>Hear the cue, practise English speech, then write.</small>
             </span>
             <Check size={20} className="choice-check" aria-hidden="true" />
           </label>
@@ -533,7 +534,7 @@ function PracticeSetup({
             <LockKeyhole size={24} aria-hidden="true" />
             <span>
               <strong>Test</strong>
-              <small>Recall the answer before it is revealed.</small>
+              <small>Complete every check before either word appears.</small>
             </span>
             <Check size={20} className="choice-check" aria-hidden="true" />
           </label>
@@ -542,10 +543,22 @@ function PracticeSetup({
         <fieldset className="choice-group direction-group">
           <legend>Choose a direction</legend>
           {[
-            ['english-to-german', 'English → German'],
-            ['german-to-english', 'German → English'],
-            ['mixed', 'Mix both directions'],
-          ].map(([value, label]) => (
+            {
+              value: 'english-to-german',
+              label: 'English → German',
+              detail: 'Hear English; speak English; write German and English.',
+            },
+            {
+              value: 'german-to-english',
+              label: 'German → English',
+              detail: 'Hear German; speak and write the English translation.',
+            },
+            {
+              value: 'mixed',
+              label: 'Mix both directions',
+              detail: 'Switch the audio cue while keeping English as the focus.',
+            },
+          ].map(({ value, label, detail }) => (
             <label className={direction === value ? 'line-choice selected' : 'line-choice'} key={value}>
               <input
                 type="radio"
@@ -554,7 +567,10 @@ function PracticeSetup({
                 checked={direction === value}
                 onChange={() => setDirection(value as PracticeDirection)}
               />
-              <span>{label}</span>
+              <span>
+                <strong>{label}</strong>
+                <small>{detail}</small>
+              </span>
               <Check size={18} aria-hidden="true" />
             </label>
           ))}
@@ -583,26 +599,74 @@ function shuffle<T>(values: T[]): T[] {
 function makePrompts(exercise: ExerciseSet, direction: PracticeDirection): PracticePrompt[] {
   return shuffle(
     exercise.entries.map((entry) => {
-      const resolvedDirection =
+      const resolvedDirection: Exclude<PracticeDirection, 'mixed'> =
         direction === 'mixed'
           ? Math.random() < 0.5
             ? 'english-to-german'
             : 'german-to-english'
           : direction
-      return resolvedDirection === 'english-to-german'
-        ? { entryId: entry.id, source: entry.english, target: entry.german, targetLocale: 'de-DE' }
-        : { entryId: entry.id, source: entry.german, target: entry.english, targetLocale: 'en-GB' }
+      return createPracticePrompt(entry, resolvedDirection)
     }),
   )
 }
 
 const spokenMessages: Record<SpokenOutcome, string> = {
   correct: 'That sounded right.',
-  'different-word': 'That sounded like a different word. Keep going with the spelling step.',
-  'pronunciation-retry': 'The word was recognised. Try a clearer, slower pronunciation next time.',
+  'different-word': 'That sounded like a different English word. Keep going with the writing step.',
+  'pronunciation-retry': 'The English word was recognised. Try a clearer, slower pronunciation next time.',
   'no-speech': 'No clear speech was heard. You can try again.',
   'low-confidence': 'The recording was not clear enough to judge.',
   'service-unavailable': 'Speaking feedback is unavailable right now.',
+}
+
+const languageNames: Record<VocabularyLanguage, string> = {
+  english: 'English',
+  german: 'German',
+}
+
+function emptySpellingAnswers(): Record<VocabularyLanguage, string> {
+  return { english: '', german: '' }
+}
+
+function SpellingFeedback({
+  word,
+  outcome,
+}: {
+  word: PracticeWord
+  outcome: SpellingOutcome
+}) {
+  const language = languageNames[word.language]
+
+  return (
+    <div className={`spelling-result result-${outcome}`}>
+      {outcome === 'correct' ? (
+        <>
+          <Check size={22} aria-hidden="true" />
+          <strong>{language} spelling correct</strong>
+        </>
+      ) : outcome === 'minor-typo' ? (
+        <>
+          <CircleAlert size={22} aria-hidden="true" />
+          <div>
+            <strong>Almost right in {language} — one small typo</strong>
+            <p>
+              Correct spelling: <b lang={word.locale}>{word.text}</b>
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <RotateCcw size={22} aria-hidden="true" />
+          <div>
+            <strong>Compare the {language} spelling</strong>
+            <p>
+              Correct spelling: <b lang={word.locale}>{word.text}</b>
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 function PracticeScreen({
@@ -626,8 +690,10 @@ function PracticeScreen({
   const [state, dispatch] = useReducer(practiceReducer, initialPracticeState(prompts.length, mode))
   const [spokenOutcome, setSpokenOutcome] = useState<SpokenOutcome | null>(null)
   const [spokenScore, setSpokenScore] = useState<number | null>(null)
-  const [spelling, setSpelling] = useState('')
-  const [spellingOutcome, setSpellingOutcome] = useState<SpellingOutcome | null>(null)
+  const [spelling, setSpelling] = useState(emptySpellingAnswers)
+  const [spellingOutcomes, setSpellingOutcomes] = useState<
+    Partial<Record<VocabularyLanguage, SpellingOutcome>>
+  >({})
   const [attempts, setAttempts] = useState<AttemptSummary[]>([])
   const [storageWarning, setStorageWarning] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
@@ -635,6 +701,8 @@ function PracticeScreen({
   const stopTimer = useRef<number | null>(null)
   const completed = useRef(false)
   const prompt = prompts[state.itemIndex]!
+  const cue = prompt.words[prompt.cueLanguage]
+  const spokenAnswer = prompt.words[prompt.spokenLanguage]
 
   useEffect(
     () => () => {
@@ -655,7 +723,7 @@ function PracticeScreen({
     }
   }, [attempts, onComplete, state.phase])
 
-  async function playTarget() {
+  async function playCue() {
     if (!online || playing) {
       return
     }
@@ -665,7 +733,7 @@ function PracticeScreen({
     }
     setPlaying(true)
     try {
-      const blob = await requestSpeech(prompt.target, prompt.targetLocale)
+      const blob = await requestSpeech(cue.text, cue.locale)
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
       await new Promise<void>((resolve, reject) => {
@@ -701,7 +769,12 @@ function PracticeScreen({
     dispatch({ type: 'RECORDED' })
     try {
       const audio = await activeRecorder.stop()
-      const result = await assessPronunciation(audio, prompt.target, prompt.targetLocale, mode)
+      const result = await assessPronunciation(
+        audio,
+        spokenAnswer.text,
+        spokenAnswer.locale,
+        mode,
+      )
       setSpokenOutcome(result.outcome)
       setSpokenScore(result.pronunciationScore)
       dispatch({ type: 'SPEECH_FINISHED' })
@@ -719,13 +792,13 @@ function PracticeScreen({
   }
 
   async function startRecording() {
-    if (!online || state.phase !== 'ready') {
+    if (!online || state.phase !== 'ready' || !state.hasListened) {
       return
     }
     setSpokenOutcome(null)
     setSpokenScore(null)
-    setSpelling('')
-    setSpellingOutcome(null)
+    setSpelling(emptySpellingAnswers())
+    setSpellingOutcomes({})
     try {
       recorder.current = await PcmRecorder.start()
       dispatch({ type: 'RECORD' })
@@ -741,22 +814,38 @@ function PracticeScreen({
 
   async function submitSpelling(event: FormEvent) {
     event.preventDefault()
-    if (!spelling.trim() || !spokenOutcome) {
+    if (
+      !spokenOutcome ||
+      prompt.spellingLanguages.some((language) => !spelling[language].trim())
+    ) {
       return
     }
-    const grade = gradeSpelling(spelling, prompt.target, prompt.targetLocale)
-    setSpellingOutcome(grade.outcome)
+    const englishGrade = gradeSpelling(
+      spelling.english,
+      prompt.words.english.text,
+      prompt.words.english.locale,
+    )
+    const germanGrade = prompt.spellingLanguages.includes('german')
+      ? gradeSpelling(
+          spelling.german,
+          prompt.words.german.text,
+          prompt.words.german.locale,
+        )
+      : undefined
+    setSpellingOutcomes({
+      english: englishGrade.outcome,
+      ...(germanGrade ? { german: germanGrade.outcome } : {}),
+    })
     setStorageWarning(null)
-    const resolvedDirection =
-      prompt.targetLocale === 'de-DE' ? 'english-to-german' : 'german-to-english'
     const attempt: AttemptSummary = {
       id: makeId('attempt'),
       exerciseId: exercise.id,
       entryId: prompt.entryId,
       mode,
-      direction: resolvedDirection,
+      direction: prompt.direction,
       spokenOutcome,
-      spellingOutcome: grade.outcome,
+      spellingOutcome: englishGrade.outcome,
+      ...(germanGrade ? { germanSpellingOutcome: germanGrade.outcome } : {}),
       attemptedAt: new Date().toISOString(),
     }
     setAttempts((current) => [...current, attempt])
@@ -773,13 +862,12 @@ function PracticeScreen({
   function next() {
     setSpokenOutcome(null)
     setSpokenScore(null)
-    setSpelling('')
-    setSpellingOutcome(null)
+    setSpelling(emptySpellingAnswers())
+    setSpellingOutcomes({})
     setStorageWarning(null)
     dispatch({ type: 'NEXT' })
   }
 
-  const targetVisible = mayRevealTarget(mode, state.phase)
   const progress = ((state.itemIndex + (state.phase === 'revealed' ? 1 : 0)) / state.totalItems) * 100
 
   return (
@@ -799,22 +887,16 @@ function PracticeScreen({
 
       <section className="practice-specimen" aria-live="polite">
         <div className="specimen-meta">
-          <span>{prompt.targetLocale === 'de-DE' ? 'EN → DE' : 'DE → EN'}</span>
+          <span>{prompt.direction === 'english-to-german' ? 'EN → DE' : 'DE → EN'}</span>
           <span>{mode === 'learn' ? 'LEARN' : 'TEST'}</span>
         </div>
-        <p className="prompt-label">{targetVisible ? 'Word pair' : 'Say and spell the translation'}</p>
-        <p className="source-word" lang={prompt.targetLocale === 'de-DE' ? 'en-GB' : 'de-DE'}>
-          {prompt.source}
-        </p>
-        <div className={targetVisible ? 'target-reveal visible' : 'target-reveal'}>
-          {targetVisible ? (
-            <>
-              <ArrowDownRight size={22} aria-hidden="true" />
-              <strong lang={prompt.targetLocale}>{prompt.target}</strong>
-            </>
-          ) : (
-            <span className="concealed-answer">Answer stays covered until spelling is finished</span>
-          )}
+        <p className="prompt-label">Audio cue</p>
+        <div className="audio-cue">
+          <Headphones size={44} strokeWidth={1.8} aria-hidden="true" />
+          <div>
+            <strong>Listen to the {languageNames[cue.language]} word</strong>
+            <small>No English or German spelling appears until your checks are complete.</small>
+          </div>
         </div>
         <div className="measurement-line" aria-hidden="true">
           {Array.from({ length: 17 }, (_, index) => (
@@ -837,18 +919,18 @@ function PracticeScreen({
         ) : null}
 
         {state.phase === 'ready' && !state.error ? (
-          <div className="practice-actions">
-            {mode === 'learn' ? (
-              <button className="secondary-button large-button" type="button" onClick={() => void playTarget()} disabled={!online || playing}>
-                <Speaker size={22} aria-hidden="true" />
-                {playing ? 'Playing…' : 'Listen'}
+          <div className={state.hasListened ? 'practice-actions ready-to-speak' : 'practice-actions'}>
+            <button className="secondary-button large-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
+              <Speaker size={22} aria-hidden="true" />
+              {playing ? 'Playing…' : state.hasListened ? 'Listen again' : 'Listen'}
+            </button>
+            {state.hasListened ? (
+              <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
+                <Mic size={27} aria-hidden="true" />
+                <span>Speak English</span>
+                <small>Say the English word · Up to 8 seconds</small>
               </button>
             ) : null}
-            <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
-              <Mic size={27} aria-hidden="true" />
-              <span>Speak answer</span>
-              <small>Up to 8 seconds</small>
-            </button>
           </div>
         ) : null}
 
@@ -890,63 +972,82 @@ function PracticeScreen({
               {spokenOutcome === 'correct' ? <Check size={21} aria-hidden="true" /> : <CircleAlert size={21} aria-hidden="true" />}
               <div>
                 <strong>{spokenMessages[spokenOutcome]}</strong>
-                {spokenScore !== null && mode === 'learn' ? <small>Pronunciation check: {Math.round(spokenScore)} / 100</small> : null}
+                {spokenScore !== null && mode === 'learn' ? <small>English pronunciation: {Math.round(spokenScore)} / 100</small> : null}
               </div>
             </div>
             <form onSubmit={submitSpelling}>
-              <label htmlFor="spelling-answer">
-                Now spell the answer
-                <small>The answer is still covered.</small>
-              </label>
-              <input
-                id="spelling-answer"
-                lang={prompt.targetLocale}
-                value={spelling}
-                onChange={(event) => setSpelling(event.target.value)}
-                autoFocus
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                maxLength={120}
-              />
-              <button className="primary-button full-width large-button" type="submit" disabled={!spelling.trim()}>
-                Check spelling
+              <fieldset className="spelling-fields">
+                <legend>Now write {prompt.spellingLanguages.length === 2 ? 'both words' : 'the English word'}</legend>
+                {prompt.spellingLanguages.map((language, index) => {
+                  const word = prompt.words[language]
+                  const detail =
+                    language === 'german'
+                      ? 'Write the German meaning of the English cue.'
+                      : prompt.direction === 'english-to-german'
+                        ? 'Write the English word you heard.'
+                        : 'Write the English translation of the German cue.'
+                  return (
+                    <label htmlFor={`spelling-${language}`} key={language}>
+                      {languageNames[language]} {language === 'german' ? 'translation' : 'spelling'}
+                      <small>{detail}</small>
+                      <input
+                        id={`spelling-${language}`}
+                        lang={word.locale}
+                        value={spelling[language]}
+                        onChange={(event) =>
+                          setSpelling((current) => ({
+                            ...current,
+                            [language]: event.target.value,
+                          }))
+                        }
+                        autoFocus={index === 0}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        maxLength={120}
+                      />
+                    </label>
+                  )
+                })}
+              </fieldset>
+              <button
+                className="primary-button full-width large-button"
+                type="submit"
+                disabled={prompt.spellingLanguages.some(
+                  (language) => !spelling[language].trim(),
+                )}
+              >
+                {prompt.spellingLanguages.length === 2
+                  ? 'Check both answers'
+                  : 'Check English spelling'}
                 <ChevronRight size={21} aria-hidden="true" />
               </button>
             </form>
           </div>
         ) : null}
 
-        {state.phase === 'revealed' && spokenOutcome && spellingOutcome ? (
+        {state.phase === 'revealed' && spokenOutcome && spellingOutcomes.english ? (
           <div className="reveal-step">
-            <div className={`spelling-result result-${spellingOutcome}`}>
-              {spellingOutcome === 'correct' ? (
-                <>
-                  <Check size={22} aria-hidden="true" />
-                  <strong>Spelling correct</strong>
-                </>
-              ) : spellingOutcome === 'minor-typo' ? (
-                <>
-                  <CircleAlert size={22} aria-hidden="true" />
-                  <div>
-                    <strong>Almost right — one small typo</strong>
-                    <p>
-                      Correct spelling: <b>{prompt.target}</b>
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <RotateCcw size={22} aria-hidden="true" />
-                  <div>
-                    <strong>Compare the spelling</strong>
-                    <p>
-                      Correct spelling: <b>{prompt.target}</b>
-                    </p>
-                  </div>
-                </>
-              )}
+            <div className="answer-ledger" aria-label="Correct word pair">
+              <div>
+                <span>English</span>
+                <strong lang="en-GB">{prompt.words.english.text}</strong>
+              </div>
+              <div>
+                <span>German</span>
+                <strong lang="de-DE">{prompt.words.german.text}</strong>
+              </div>
             </div>
+            {prompt.spellingLanguages.map((language) => {
+              const outcome = spellingOutcomes[language]
+              return outcome ? (
+                <SpellingFeedback
+                  key={language}
+                  word={prompt.words[language]}
+                  outcome={outcome}
+                />
+              ) : null
+            })}
             {storageWarning ? (
               <p className="storage-warning" role="status">
                 <CircleAlert size={18} aria-hidden="true" />
@@ -954,9 +1055,9 @@ function PracticeScreen({
               </p>
             ) : null}
             <div className="reveal-actions">
-              <button className="secondary-button" type="button" onClick={() => void playTarget()} disabled={!online || playing}>
+              <button className="secondary-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
                 <Speaker size={20} aria-hidden="true" />
-                {playing ? 'Playing…' : 'Hear it again'}
+                {playing ? 'Playing…' : 'Hear the cue again'}
               </button>
               <button className="primary-button" type="button" onClick={next}>
                 {state.itemIndex + 1 === state.totalItems ? 'See results' : 'Next word'}
@@ -981,10 +1082,23 @@ function ResultsScreen({
   onAgain: () => void
   onDone: () => void
 }) {
-  const spokenCorrect = attempts.filter((attempt) => attempt.spokenOutcome === 'correct').length
-  const spellingCorrect = attempts.filter((attempt) => attempt.spellingOutcome === 'correct').length
+  const spokenCorrect = attempts.filter(
+    (attempt) => attempt.spokenOutcome === 'correct',
+  ).length
+  const englishSpellingCorrect = attempts.filter(
+    (attempt) => attempt.spellingOutcome === 'correct',
+  ).length
+  const germanAttempts = attempts.filter(
+    (attempt) => attempt.direction === 'english-to-german',
+  )
+  const germanSpellingCorrect = germanAttempts.filter(
+    (attempt) => attempt.germanSpellingOutcome === 'correct',
+  ).length
   const reviewCount = attempts.filter(
-    (attempt) => attempt.spokenOutcome !== 'correct' || attempt.spellingOutcome === 'incorrect',
+    (attempt) =>
+      attempt.spokenOutcome !== 'correct' ||
+      attempt.spellingOutcome === 'incorrect' ||
+      attempt.germanSpellingOutcome === 'incorrect',
   ).length
 
   return (
@@ -996,17 +1110,25 @@ function ResultsScreen({
       <p className="lede">{exercise.name}</p>
       <div className="result-ledger">
         <div>
-          <span>Spoken clearly</span>
+          <span>English spoken clearly</span>
           <strong>
             {spokenCorrect}<small> / {attempts.length}</small>
           </strong>
         </div>
         <div>
-          <span>Spelled exactly</span>
+          <span>English spelled exactly</span>
           <strong>
-            {spellingCorrect}<small> / {attempts.length}</small>
+            {englishSpellingCorrect}<small> / {attempts.length}</small>
           </strong>
         </div>
+        {germanAttempts.length > 0 ? (
+          <div>
+            <span>German translated exactly</span>
+            <strong>
+              {germanSpellingCorrect}<small> / {germanAttempts.length}</small>
+            </strong>
+          </div>
+        ) : null}
         <div>
           <span>Worth another look</span>
           <strong>{reviewCount}</strong>

@@ -1,5 +1,6 @@
 export * from './normalization.js'
 export * from './practice-machine.js'
+export * from './practice-prompt.js'
 export * from './pronunciation.js'
 export * from './schemas.js'
 export * from './spelling.js'
