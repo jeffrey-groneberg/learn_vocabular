@@ -1,3 +1,9 @@
+import {
+  useInstrumenter,
+  type Instrumenter,
+  type TracingContext,
+  type TracingSpan,
+} from '@azure/core-tracing'
 import { useAzureMonitor } from '@azure/monitor-opentelemetry'
 import type { HttpInstrumentationConfig } from '@opentelemetry/instrumentation-http'
 import { resourceFromAttributes } from '@opentelemetry/resources'
@@ -14,6 +20,31 @@ export type RuntimeRole =
 
 let started = false
 
+const noopContext: TracingContext = {
+  setValue: () => noopContext,
+  getValue: () => undefined,
+  deleteValue: () => noopContext,
+}
+
+const noopSpan: TracingSpan = {
+  setStatus: () => undefined,
+  setAttribute: () => undefined,
+  end: () => undefined,
+  recordException: () => undefined,
+  isRecording: () => false,
+  addEvent: () => undefined,
+}
+
+const noopAzureSdkInstrumenter: Instrumenter = {
+  startSpan: (_name, options) => ({
+    span: noopSpan,
+    tracingContext: options.tracingContext ?? noopContext,
+  }),
+  withContext: (_context, callback, ...args) => callback(...args),
+  parseTraceparentHeader: () => undefined,
+  createRequestHeaders: () => ({}),
+}
+
 export function startNodeTelemetry(role: RuntimeRole): void {
   if (started) {
     return
@@ -26,6 +57,7 @@ export function startNodeTelemetry(role: RuntimeRole): void {
 
   const http: HttpInstrumentationConfig = {
     enabled: true,
+    disableOutgoingRequestInstrumentation: true,
     headersToSpanAttributes: {
       client: { requestHeaders: [], responseHeaders: [] },
       server: { requestHeaders: [], responseHeaders: [] },
@@ -59,4 +91,5 @@ export function startNodeTelemetry(role: RuntimeRole): void {
       console: { enabled: false },
     },
   })
+  useInstrumenter(noopAzureSdkInstrumenter)
 }

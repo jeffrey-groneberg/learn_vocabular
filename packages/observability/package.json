@@ -23,6 +23,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@azure/core-tracing": "^1.4.0",
     "@azure/monitor-opentelemetry": "^1.19.0",
     "@fastify/static": "^10.1.3",
     "@microsoft/applicationinsights-web": "^3.4.3",

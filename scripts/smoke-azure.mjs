@@ -23,7 +23,7 @@ async function checkTrace(resourceGroup, appName, traceId) {
     'requests',
     `| where timestamp > ago(15m) and operation_Id == "${traceId}"`,
     '| where cloud_RoleName == "vocabulary-gateway"',
-    '| where name contains "/api/tts"',
+    '| where url == "/api/tts"',
     '| project operation_Id',
     '| join kind=inner (dependencies',
     `  | where timestamp > ago(15m) and operation_Id == "${traceId}"`,
