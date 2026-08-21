@@ -22,21 +22,41 @@ interface VocabularyDatabase extends DBSchema {
       value: string
     }
   }
+  speechAudio: {
+    key: string
+    value: {
+      key: string
+      audio: Blob
+      lastAccessedAt: number
+    }
+    indexes: { 'by-last-accessed': number }
+  }
 }
 
 let databasePromise: Promise<IDBPDatabase<VocabularyDatabase>> | undefined
 
 export function getDatabase(): Promise<IDBPDatabase<VocabularyDatabase>> {
-  databasePromise ??= openDB<VocabularyDatabase>('vocabulary-voice-tutor', 1, {
+  databasePromise ??= openDB<VocabularyDatabase>('vocabulary-voice-tutor', 2, {
     upgrade(database) {
-      const exercises = database.createObjectStore('exercises', { keyPath: 'id' })
-      exercises.createIndex('by-updated', 'updatedAt')
+      if (!database.objectStoreNames.contains('exercises')) {
+        const exercises = database.createObjectStore('exercises', { keyPath: 'id' })
+        exercises.createIndex('by-updated', 'updatedAt')
+      }
 
-      const attempts = database.createObjectStore('attempts', { keyPath: 'id' })
-      attempts.createIndex('by-exercise', 'exerciseId')
-      attempts.createIndex('by-attempted', 'attemptedAt')
+      if (!database.objectStoreNames.contains('attempts')) {
+        const attempts = database.createObjectStore('attempts', { keyPath: 'id' })
+        attempts.createIndex('by-exercise', 'exerciseId')
+        attempts.createIndex('by-attempted', 'attemptedAt')
+      }
 
-      database.createObjectStore('preferences', { keyPath: 'key' })
+      if (!database.objectStoreNames.contains('preferences')) {
+        database.createObjectStore('preferences', { keyPath: 'key' })
+      }
+
+      if (!database.objectStoreNames.contains('speechAudio')) {
+        const speechAudio = database.createObjectStore('speechAudio', { keyPath: 'key' })
+        speechAudio.createIndex('by-last-accessed', 'lastAccessedAt')
+      }
     },
   })
 
