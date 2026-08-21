@@ -6,6 +6,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/observability/package.json packages/observability/package.json
+ARG NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
 RUN npm ci --no-audit --no-fund
 
 COPY apps/web apps/web
