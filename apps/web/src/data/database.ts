@@ -70,6 +70,16 @@ export async function saveAttempt(attempt: AttemptSummary): Promise<void> {
   await database.put('attempts', attempt)
 }
 
+export async function getPreference(key: string): Promise<string | undefined> {
+  const database = await getDatabase()
+  return (await database.get('preferences', key))?.value
+}
+
+export async function savePreference(key: string, value: string): Promise<void> {
+  const database = await getDatabase()
+  await database.put('preferences', { key, value })
+}
+
 export function resetDatabaseForTests(): void {
   databasePromise = undefined
 }

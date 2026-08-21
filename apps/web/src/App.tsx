@@ -32,6 +32,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Settings,
   Settings2,
   Speaker,
   Square,
@@ -40,6 +41,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useReducer,
   useRef,
@@ -56,6 +58,8 @@ import {
   requestSpeech,
 } from './lib/api.js'
 import { PcmRecorder } from './lib/audio.js'
+import { LanguageProvider } from './LanguageProvider.js'
+import { useUiLanguage, type UiCopy, type UiLanguage } from './i18n.js'
 
 type View =
   | { name: 'library' }
@@ -89,33 +93,135 @@ function ShellHeader({
   onLogout?: () => void
   minimal?: boolean
 }) {
+  const { language, copy, preferenceLoadFailed, changeLanguage } = useUiLanguage()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [savingLanguage, setSavingLanguage] = useState<UiLanguage | null>(null)
+  const [saveError, setSaveError] = useState(false)
+  const settingsId = useId()
+
+  async function chooseLanguage(nextLanguage: UiLanguage) {
+    if (nextLanguage === language || savingLanguage) {
+      return
+    }
+    setSavingLanguage(nextLanguage)
+    setSaveError(false)
+    try {
+      await changeLanguage(nextLanguage)
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSavingLanguage(null)
+    }
+  }
+
   return (
-    <header className="cabinet-header">
-      <div className="brand-lockup">
-        <p className="brand-name">Vocabulary Voice Tutor</p>
-      </div>
-      {!minimal && onLogout ? (
-        <button className="icon-button on-blue" type="button" onClick={onLogout} aria-label="Log out">
-          <LogOut size={20} aria-hidden="true" />
-        </button>
+    <>
+      <header className="cabinet-header">
+        <div className="brand-lockup">
+          <p className="brand-name">Vocabulary Voice Tutor</p>
+        </div>
+        <div className="header-actions">
+          <button
+            className="icon-button on-blue"
+            type="button"
+            onClick={() => setSettingsOpen((open) => !open)}
+            aria-label={copy.settings.open}
+            aria-controls={settingsId}
+            aria-expanded={settingsOpen}
+          >
+            <Settings size={20} aria-hidden="true" />
+          </button>
+          {!minimal && onLogout ? (
+            <button
+              className="icon-button on-blue"
+              type="button"
+              onClick={onLogout}
+              aria-label={copy.common.logout}
+            >
+              <LogOut size={20} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+      </header>
+      {settingsOpen ? (
+        <section className="settings-drawer" id={settingsId} aria-labelledby={`${settingsId}-title`}>
+          <div className="settings-drawer-inner">
+            <div className="settings-heading">
+              <h2 id={`${settingsId}-title`}>{copy.settings.title}</h2>
+              <p>{copy.settings.description}</p>
+            </div>
+            <fieldset className="language-options" aria-busy={savingLanguage !== null}>
+              <legend>{copy.settings.languageLegend}</legend>
+              {([
+                {
+                  value: 'en',
+                  code: 'EN',
+                  name: copy.settings.englishName,
+                  detail: copy.settings.englishDetail,
+                },
+                {
+                  value: 'de',
+                  code: 'DE',
+                  name: copy.settings.germanName,
+                  detail: copy.settings.germanDetail,
+                },
+              ] satisfies Array<{
+                value: UiLanguage
+                code: string
+                name: string
+                detail: string
+              }>).map((option) => (
+                <label
+                  className={language === option.value ? 'language-option selected' : 'language-option'}
+                  key={option.value}
+                >
+                  <input
+                    type="radio"
+                    name={`${settingsId}-language`}
+                    value={option.value}
+                    checked={language === option.value}
+                    disabled={savingLanguage !== null}
+                    onChange={() => void chooseLanguage(option.value)}
+                  />
+                  <span className="language-code" aria-hidden="true">
+                    {option.code}
+                  </span>
+                  <span className="language-copy">
+                    <strong>{option.name}</strong>
+                    <small>{option.detail}</small>
+                  </span>
+                  <Check className="language-check" size={20} aria-hidden="true" />
+                </label>
+              ))}
+            </fieldset>
+            {preferenceLoadFailed || saveError ? (
+              <p className="settings-error form-error" role="alert">
+                <CircleAlert size={18} aria-hidden="true" />
+                {saveError ? copy.settings.saveError : copy.settings.loadError}
+              </p>
+            ) : null}
+          </div>
+        </section>
       ) : null}
-    </header>
+    </>
   )
 }
 
 function OfflineNotice({ online }: { online: boolean }) {
+  const { copy } = useUiLanguage()
   if (online) {
     return null
   }
   return (
     <div className="offline-notice" role="status">
       <CircleAlert size={18} aria-hidden="true" />
-      Your words are still here. Listening and speaking need an internet connection.
+      {copy.notices.offline}
     </div>
   )
 }
 
 function UpdateNotice() {
+  const { copy } = useUiLanguage()
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -134,14 +240,14 @@ function UpdateNotice() {
   }
   return (
     <div className="update-notice" role="status">
-      <span>A fresh version is ready.</span>
+      <span>{copy.notices.updateReady}</span>
       <button
         type="button"
         onClick={() =>
           window.dispatchEvent(new CustomEvent('vocabulary-tutor:apply-update'))
         }
       >
-        Update now
+        {copy.notices.updateNow}
       </button>
     </div>
   )
@@ -154,15 +260,32 @@ function AccessScreen({
   state: Extract<SessionState, 'signed-out' | 'unavailable' | 'expired'>
   onAuthenticated: () => void
 }) {
+  const { copy } = useUiLanguage()
   const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(
+  const [error, setError] = useState<
+    | { kind: 'service-unavailable' }
+    | { kind: 'session-expired' }
+    | { kind: 'rate-limit'; minutes: number }
+    | { kind: 'invalid-code' }
+    | null
+  >(
     state === 'unavailable'
-      ? 'The private speech service is not available right now.'
+      ? { kind: 'service-unavailable' }
       : state === 'expired'
-        ? 'Your 30-day session ended. Sign in again; your word lists are still on this iPhone.'
+        ? { kind: 'session-expired' }
         : null,
   )
   const [submitting, setSubmitting] = useState(false)
+  const errorMessage =
+    error?.kind === 'service-unavailable'
+      ? copy.access.serviceUnavailable
+      : error?.kind === 'session-expired'
+        ? copy.access.sessionExpired
+        : error?.kind === 'rate-limit'
+          ? copy.access.tooManyTries(error.minutes)
+          : error?.kind === 'invalid-code'
+            ? copy.access.invalidCode
+            : null
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -178,9 +301,9 @@ function AccessScreen({
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 429) {
         const minutes = Math.max(1, Math.ceil((caught.retryAfterSeconds ?? 60) / 60))
-        setError(`Too many tries. Wait about ${minutes} minute${minutes === 1 ? '' : 's'}, then try again.`)
+        setError({ kind: 'rate-limit', minutes })
       } else {
-        setError('That code did not work. Check it and try again.')
+        setError({ kind: 'invalid-code' })
       }
     } finally {
       setSubmitting(false)
@@ -193,13 +316,12 @@ function AccessScreen({
       <main className="access-main">
         <section className="access-card" aria-labelledby="access-title">
           <LockKeyhole className="access-icon" size={30} aria-hidden="true" />
-          <h1 id="access-title">Open your words</h1>
+          <h1 id="access-title">{copy.access.title}</h1>
           <p className="lede">
-            Use your family access code. Your word lists and practice history stay on this
-            iPhone.
+            {copy.access.description}
           </p>
           <form onSubmit={submit}>
-            <label htmlFor="family-code">Family access code</label>
+            <label htmlFor="family-code">{copy.access.codeLabel}</label>
             <input
               id="family-code"
               type="password"
@@ -210,21 +332,21 @@ function AccessScreen({
               maxLength={256}
               disabled={submitting}
             />
-            {error ? (
+            {errorMessage ? (
               <p className="form-error" role="alert">
                 <CircleAlert size={18} aria-hidden="true" />
-                {error}
+                {errorMessage}
               </p>
             ) : null}
             <button className="primary-button full-width" type="submit" disabled={!code || submitting}>
-              {submitting ? 'Opening…' : 'Open tutor'}
+              {submitting ? copy.access.opening : copy.access.openTutor}
               {!submitting ? <ChevronRight size={21} aria-hidden="true" /> : null}
             </button>
           </form>
         </section>
         <p className="privacy-note">
           <LockKeyhole size={15} aria-hidden="true" />
-          Audio is used only for the current check and is then discarded.
+          {copy.access.privacy}
         </p>
       </main>
     </div>
@@ -232,17 +354,18 @@ function AccessScreen({
 }
 
 function EmptyLibrary({ onCreate }: { onCreate: () => void }) {
+  const { copy } = useUiLanguage()
   return (
     <section className="empty-cabinet">
       <div className="empty-drawer" aria-hidden="true">
         <span>EN</span>
         <span>DE</span>
       </div>
-      <h2>Your cabinet is empty</h2>
-      <p>Add a short list for the next vocabulary lesson. You can change it at any time.</p>
+      <h2>{copy.library.emptyTitle}</h2>
+      <p>{copy.library.emptyDescription}</p>
       <button className="primary-button" type="button" onClick={onCreate}>
         <Plus size={20} aria-hidden="true" />
-        Create first word list
+        {copy.library.createFirst}
       </button>
     </section>
   )
@@ -263,16 +386,17 @@ function LibraryScreen({
   onDelete: (exercise: ExerciseSet) => void
   practiceAvailable: boolean
 }) {
+  const { copy } = useUiLanguage()
   return (
     <main className="page-content">
       <div className="page-heading">
         <div>
-          <h1>Word lists</h1>
-          <p>Choose a drawer to practise, or prepare a new one.</p>
+          <h1>{copy.library.title}</h1>
+          <p>{copy.library.description}</p>
         </div>
         <button className="primary-button compact" type="button" onClick={onCreate}>
           <Plus size={20} aria-hidden="true" />
-          New list
+          {copy.library.newList}
         </button>
       </div>
 
@@ -288,9 +412,7 @@ function LibraryScreen({
                 <span>DE</span>
               </div>
               <h2>{exercise.name}</h2>
-              <p>
-                {exercise.entries.length} {exercise.entries.length === 1 ? 'word pair' : 'word pairs'}
-              </p>
+              <p>{copy.library.pairCount(exercise.entries.length)}</p>
               <div className="drawer-ruler" aria-hidden="true">
                 {Array.from({ length: 9 }, (_, tick) => (
                   <span key={tick} />
@@ -304,20 +426,20 @@ function LibraryScreen({
                 title={
                   practiceAvailable
                     ? undefined
-                    : 'Sign in while online to use listening and speaking practice.'
+                    : copy.library.unavailableTitle
                 }
               >
                 <BookOpen size={20} aria-hidden="true" />
-                Practise this list
+                {copy.library.practise}
               </button>
               <div className="drawer-actions">
                 <button className="text-button" type="button" onClick={() => onEdit(exercise)}>
                   <Settings2 size={17} aria-hidden="true" />
-                  Edit
+                  {copy.library.edit}
                 </button>
                 <button className="text-button danger" type="button" onClick={() => onDelete(exercise)}>
                   <Trash2 size={17} aria-hidden="true" />
-                  Delete
+                  {copy.library.delete}
                 </button>
               </div>
             </article>
@@ -342,12 +464,25 @@ function ExerciseEditor({
   onCancel: () => void
   onSaved: (exercise: ExerciseSet) => void
 }) {
+  const { copy } = useUiLanguage()
   const [name, setName] = useState(existing?.name ?? '')
   const [entries, setEntries] = useState<VocabularyEntry[]>(
     existing?.entries.length ? existing.entries : [blankEntry()],
   )
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<
+    'missing-name' | 'missing-pair' | 'incomplete-pair' | 'save-error' | null
+  >(null)
   const [saving, setSaving] = useState(false)
+  const errorMessage =
+    error === 'missing-name'
+      ? copy.editor.missingName
+      : error === 'missing-pair'
+        ? copy.editor.missingPair
+        : error === 'incomplete-pair'
+          ? copy.editor.incompletePair
+          : error === 'save-error'
+            ? copy.editor.saveError
+            : null
 
   function changeEntry(id: string, field: 'english' | 'german', value: string) {
     const now = new Date().toISOString()
@@ -361,15 +496,15 @@ function ExerciseEditor({
     const cleanName = name.trim()
     const completeEntries = entries.filter((entry) => entry.english.trim() || entry.german.trim())
     if (!cleanName) {
-      setError('Give this word list a name.')
+      setError('missing-name')
       return
     }
     if (completeEntries.length === 0) {
-      setError('Add at least one English and German word pair.')
+      setError('missing-pair')
       return
     }
     if (completeEntries.some((entry) => !entry.english.trim() || !entry.german.trim())) {
-      setError('Complete both sides of every word pair.')
+      setError('incomplete-pair')
       return
     }
 
@@ -392,7 +527,7 @@ function ExerciseEditor({
       await saveExercise(exercise)
       onSaved(exercise)
     } catch {
-      setError('This list could not be saved on the iPhone. Check available storage and try again.')
+      setError('save-error')
     } finally {
       setSaving(false)
     }
@@ -402,37 +537,37 @@ function ExerciseEditor({
     <main className="page-content narrow-page">
       <button className="back-button" type="button" onClick={onCancel}>
         <ArrowLeft size={19} aria-hidden="true" />
-        Word lists
+        {copy.editor.back}
       </button>
       <div className="page-heading">
         <div>
-          <h1>{existing ? 'Edit word list' : 'Build a word list'}</h1>
-          <p>Keep phrases short so speaking feedback stays clear.</p>
+          <h1>{existing ? copy.editor.editTitle : copy.editor.buildTitle}</h1>
+          <p>{copy.editor.description}</p>
         </div>
       </div>
       <form className="editor-form" onSubmit={submit}>
         <div className="field-group">
-          <label htmlFor="set-name">List name</label>
+          <label htmlFor="set-name">{copy.editor.nameLabel}</label>
           <input
             id="set-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="For example: Unit 4"
+            placeholder={copy.editor.namePlaceholder}
             maxLength={80}
           />
         </div>
 
         <div className="word-table-heading" aria-hidden="true">
-          <span>English</span>
-          <span>German</span>
+          <span>{copy.common.english}</span>
+          <span>{copy.common.german}</span>
         </div>
         <div className="word-rows">
           {entries.map((entry, index) => (
             <fieldset className="word-row" key={entry.id}>
-              <legend>Word pair {index + 1}</legend>
+              <legend>{copy.editor.pairLegend(index + 1)}</legend>
               <span className="row-number">{String(index + 1).padStart(2, '0')}</span>
               <label>
-                <span>English</span>
+                <span>{copy.common.english}</span>
                 <input
                   lang="en-GB"
                   value={entry.english}
@@ -442,7 +577,7 @@ function ExerciseEditor({
                 />
               </label>
               <label>
-                <span>German</span>
+                <span>{copy.common.german}</span>
                 <input
                   lang="de-DE"
                   value={entry.german}
@@ -454,7 +589,7 @@ function ExerciseEditor({
               <button
                 className="icon-button remove-row"
                 type="button"
-                aria-label={`Remove word pair ${index + 1}`}
+                aria-label={copy.editor.removePair(index + 1)}
                 onClick={() =>
                   setEntries((current) =>
                     current.length === 1 ? [blankEntry()] : current.filter((item) => item.id !== entry.id),
@@ -468,22 +603,22 @@ function ExerciseEditor({
         </div>
         <button className="secondary-button add-row" type="button" onClick={() => setEntries((items) => [...items, blankEntry()])}>
           <Plus size={19} aria-hidden="true" />
-          Add another pair
+          {copy.editor.addPair}
         </button>
 
-        {error ? (
+        {errorMessage ? (
           <p className="form-error" role="alert">
             <CircleAlert size={18} aria-hidden="true" />
-            {error}
+            {errorMessage}
           </p>
         ) : null}
         <div className="sticky-actions">
           <button className="secondary-button" type="button" onClick={onCancel}>
-            Cancel
+            {copy.editor.cancel}
           </button>
           <button className="primary-button" type="submit" disabled={saving}>
             <Save size={19} aria-hidden="true" />
-            {saving ? 'Saving…' : 'Save list'}
+            {saving ? copy.editor.saving : copy.editor.save}
           </button>
         </div>
       </form>
@@ -500,6 +635,7 @@ function PracticeSetup({
   onBack: () => void
   onStart: (direction: PracticeDirection, mode: PracticeMode) => void
 }) {
+  const { copy } = useUiLanguage()
   const [direction, setDirection] = useState<PracticeDirection>('mixed')
   const [mode, setMode] = useState<PracticeMode>('learn')
 
@@ -507,28 +643,25 @@ function PracticeSetup({
     <main className="page-content narrow-page">
       <button className="back-button" type="button" onClick={onBack}>
         <ArrowLeft size={19} aria-hidden="true" />
-        Word lists
+        {copy.setup.back}
       </button>
       <div className="page-heading">
         <div>
           <h1>{exercise.name}</h1>
           <p>
-            {exercise.entries.length}{' '}
-            {exercise.entries.length === 1
-              ? 'word pair is ready.'
-              : 'word pairs are ready.'}
+            {copy.setup.readyCount(exercise.entries.length)}
           </p>
         </div>
       </div>
       <div className="setup-sheet">
         <fieldset className="choice-group">
-          <legend>Choose a mode</legend>
+          <legend>{copy.setup.chooseMode}</legend>
           <label className={mode === 'learn' ? 'choice-card selected' : 'choice-card'}>
             <input type="radio" name="mode" value="learn" checked={mode === 'learn'} onChange={() => setMode('learn')} />
             <BookOpen size={24} aria-hidden="true" />
             <span>
-              <strong>Learn</strong>
-              <small>Hear the cue, practise English speech, then write.</small>
+              <strong>{copy.setup.learn}</strong>
+              <small>{copy.setup.learnDetail}</small>
             </span>
             <Check size={20} className="choice-check" aria-hidden="true" />
           </label>
@@ -536,43 +669,27 @@ function PracticeSetup({
             <input type="radio" name="mode" value="test" checked={mode === 'test'} onChange={() => setMode('test')} />
             <LockKeyhole size={24} aria-hidden="true" />
             <span>
-              <strong>Test</strong>
-              <small>Complete every check before either word appears.</small>
+              <strong>{copy.setup.test}</strong>
+              <small>{copy.setup.testDetail}</small>
             </span>
             <Check size={20} className="choice-check" aria-hidden="true" />
           </label>
         </fieldset>
 
         <fieldset className="choice-group direction-group">
-          <legend>Choose a direction</legend>
-          {[
-            {
-              value: 'english-to-german',
-              label: 'English → German',
-              detail: 'Hear English; speak English; write German and English.',
-            },
-            {
-              value: 'german-to-english',
-              label: 'German → English',
-              detail: 'Hear German; speak and write the English translation.',
-            },
-            {
-              value: 'mixed',
-              label: 'Mix both directions',
-              detail: 'Switch the audio cue while keeping English as the focus.',
-            },
-          ].map(({ value, label, detail }) => (
+          <legend>{copy.setup.chooseDirection}</legend>
+          {(['english-to-german', 'german-to-english', 'mixed'] satisfies PracticeDirection[]).map((value) => (
             <label className={direction === value ? 'line-choice selected' : 'line-choice'} key={value}>
               <input
                 type="radio"
                 name="direction"
                 value={value}
                 checked={direction === value}
-                onChange={() => setDirection(value as PracticeDirection)}
+                onChange={() => setDirection(value)}
               />
               <span>
-                <strong>{label}</strong>
-                <small>{detail}</small>
+                <strong>{copy.setup.directions[value].label}</strong>
+                <small>{copy.setup.directions[value].detail}</small>
               </span>
               <Check size={18} aria-hidden="true" />
             </label>
@@ -580,7 +697,7 @@ function PracticeSetup({
         </fieldset>
 
         <button className="primary-button full-width large-button" type="button" onClick={() => onStart(direction, mode)}>
-          Start {mode === 'learn' ? 'learning' : 'test'}
+          {copy.setup.start(mode)}
           <ChevronRight size={22} aria-hidden="true" />
         </button>
       </div>
@@ -613,18 +730,23 @@ function makePrompts(exercise: ExerciseSet, direction: PracticeDirection): Pract
   )
 }
 
-const spokenMessages: Record<SpokenOutcome, string> = {
-  correct: 'That sounded right.',
-  'different-word': 'That sounded like a different English word. Listen again, then try once more.',
-  'pronunciation-retry': 'The English word was recognised. Try it again a little slower and clearer.',
-  'no-speech': 'No clear speech was heard. You can try again.',
-  'low-confidence': 'The recording was not clear enough to judge. Try again in a quieter spot.',
-  'service-unavailable': 'Speaking feedback is unavailable right now. Try again in a moment.',
+function languageName(copy: UiCopy, language: VocabularyLanguage): string {
+  return language === 'english' ? copy.common.english : copy.common.german
 }
 
-const languageNames: Record<VocabularyLanguage, string> = {
-  english: 'English',
-  german: 'German',
+function practiceErrorMessage(copy: UiCopy, error: string): string {
+  switch (error) {
+    case 'playback':
+      return copy.practice.errors.playback
+    case 'microphonePermission':
+      return copy.practice.errors.microphonePermission
+    case 'recordingCheck':
+      return copy.practice.errors.recordingCheck
+    case 'microphoneStart':
+      return copy.practice.errors.microphoneStart
+    default:
+      return error
+  }
 }
 
 function emptySpellingAnswers(): Record<VocabularyLanguage, string> {
@@ -638,29 +760,30 @@ function SpellingFeedback({
   word: PracticeWord
   outcome: SpellingOutcome
 }) {
-  const language = languageNames[word.language]
+  const { copy } = useUiLanguage()
+  const language = languageName(copy, word.language)
 
   return (
     <div className={`spelling-result result-${outcome}`}>
       {outcome === 'correct' ? (
         <>
           <Check size={22} aria-hidden="true" />
-          <strong>{language} spelling correct</strong>
+          <strong>{copy.practice.spellingCorrect(language)}</strong>
         </>
       ) : outcome === 'minor-typo' ? (
         <>
           <CircleAlert size={22} aria-hidden="true" />
           <div>
-            <strong>Almost right in {language}</strong>
-            <p>There is one small typo. Fix it, then check again.</p>
+            <strong>{copy.practice.spellingAlmost(language)}</strong>
+            <p>{copy.practice.spellingTypo}</p>
           </div>
         </>
       ) : (
         <>
           <RotateCcw size={22} aria-hidden="true" />
           <div>
-            <strong>Try the {language} word again</strong>
-            <p>The answer stays hidden until it is correct or you skip this word.</p>
+            <strong>{copy.practice.spellingRetry(language)}</strong>
+            <p>{copy.practice.spellingHidden}</p>
           </div>
         </>
       )}
@@ -685,6 +808,7 @@ function PracticeScreen({
   onComplete: (attempts: AttemptSummary[]) => void
   onSessionExpired: () => void
 }) {
+  const { copy } = useUiLanguage()
   const prompts = useMemo(() => makePrompts(exercise, direction), [exercise, direction])
   const [state, dispatch] = useReducer(practiceReducer, initialPracticeState(prompts.length, mode))
   const [spokenOutcome, setSpokenOutcome] = useState<SpokenOutcome | null>(null)
@@ -697,7 +821,7 @@ function PracticeScreen({
   const [retryCount, setRetryCount] = useState(0)
   const [currentAttempt, setCurrentAttempt] = useState<AttemptSummary | null>(null)
   const [attempts, setAttempts] = useState<AttemptSummary[]>([])
-  const [storageWarning, setStorageWarning] = useState<string | null>(null)
+  const [storageWarning, setStorageWarning] = useState(false)
   const [playing, setPlaying] = useState(false)
   const recorder = useRef<PcmRecorder | null>(null)
   const stopTimer = useRef<number | null>(null)
@@ -754,7 +878,7 @@ function PracticeScreen({
         onSessionExpired()
         return
       }
-      dispatch({ type: 'FAIL', message: 'The word could not be played. Check the connection and try again.' })
+      dispatch({ type: 'FAIL', message: 'playback' })
     } finally {
       setPlaying(false)
     }
@@ -793,8 +917,8 @@ function PracticeScreen({
       }
       const message =
         caught instanceof DOMException && caught.name === 'NotAllowedError'
-          ? 'Microphone access is off. Allow it in Safari settings, then try again.'
-          : 'The recording could not be checked. Nothing was saved; please try again.'
+          ? 'microphonePermission'
+          : 'recordingCheck'
       dispatch({ type: 'FAIL', message })
     }
   }
@@ -817,8 +941,8 @@ function PracticeScreen({
     } catch (caught) {
       const message =
         caught instanceof DOMException && caught.name === 'NotAllowedError'
-          ? 'Microphone access is off. Allow it in Safari settings, then try again.'
-          : 'The microphone could not start. Check Safari settings and try again.'
+          ? 'microphonePermission'
+          : 'microphoneStart'
       dispatch({ type: 'FAIL', message })
     }
   }
@@ -849,12 +973,10 @@ function PracticeScreen({
     currentAttemptId.current = attempt.id
     setCurrentAttempt(attempt)
     setAttempts((current) => [...current, attempt])
-    setStorageWarning(null)
+    setStorageWarning(false)
     void saveAttempt(attempt).catch(() => {
       if (currentAttemptId.current === attempt.id) {
-        setStorageWarning(
-          'This attempt could not be added to local history, but you can keep practising.',
-        )
+        setStorageWarning(true)
       }
     })
   }
@@ -910,7 +1032,7 @@ function PracticeScreen({
     setHasCheckedSpelling(false)
     setRetryCount(0)
     setCurrentAttempt(null)
-    setStorageWarning(null)
+    setStorageWarning(false)
     attemptRecorded.current = false
     currentAttemptId.current = null
     dispatch({ type: 'NEXT' })
@@ -923,7 +1045,7 @@ function PracticeScreen({
       <div className="practice-topbar">
         <button className="back-button" type="button" onClick={onExit}>
           <ArrowLeft size={19} aria-hidden="true" />
-          Leave
+          {copy.practice.leave}
         </button>
         <span>
           {state.itemIndex + 1} / {state.totalItems}
@@ -932,7 +1054,7 @@ function PracticeScreen({
       <div
         className="progress-track"
         role="progressbar"
-        aria-label={`Word ${state.itemIndex + 1} of ${state.totalItems}`}
+        aria-label={copy.practice.wordProgress(state.itemIndex + 1, state.totalItems)}
         aria-valuemin={0}
         aria-valuemax={state.totalItems}
         aria-valuenow={state.itemIndex + (state.phase === 'revealed' ? 1 : 0)}
@@ -943,14 +1065,14 @@ function PracticeScreen({
       <section className="practice-specimen" aria-live="polite">
         <div className="specimen-meta">
           <span>{prompt.direction === 'english-to-german' ? 'EN → DE' : 'DE → EN'}</span>
-          <span>{mode === 'learn' ? 'LEARN' : 'TEST'}</span>
+          <span>{copy.practice.modeLabel(mode)}</span>
         </div>
-        <p className="prompt-label">Audio cue</p>
+        <p className="prompt-label">{copy.practice.audioCue}</p>
         <div className="audio-cue">
           <Headphones size={44} strokeWidth={1.8} aria-hidden="true" />
           <div>
-            <strong>Listen to the {languageNames[cue.language]} word</strong>
-            <small>No English or German spelling appears until your checks are complete.</small>
+            <strong>{copy.practice.listenTo(languageName(copy, cue.language))}</strong>
+            <small>{copy.practice.spellingIntroduction}</small>
           </div>
         </div>
         <div className="measurement-line" aria-hidden="true">
@@ -963,12 +1085,12 @@ function PracticeScreen({
           <div className="feedback-panel error-panel" role="alert">
             <CircleAlert size={22} aria-hidden="true" />
             <div>
-              <strong>That did not work</strong>
-              <p>{state.error}</p>
+              <strong>{copy.practice.failedTitle}</strong>
+              <p>{practiceErrorMessage(copy, state.error)}</p>
             </div>
             <button className="secondary-button" type="button" onClick={() => dispatch({ type: 'RETRY' })}>
               <RotateCcw size={18} aria-hidden="true" />
-              Try again
+              {copy.practice.tryAgain}
             </button>
           </div>
         ) : null}
@@ -977,17 +1099,21 @@ function PracticeScreen({
           <div className={state.hasListened ? 'practice-actions ready-to-speak' : 'practice-actions'}>
             <button className="secondary-button large-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
               <Speaker size={22} aria-hidden="true" />
-              {playing ? 'Playing…' : state.hasListened ? 'Listen again' : 'Listen'}
+              {playing
+                ? copy.practice.playing
+                : state.hasListened
+                  ? copy.practice.listenAgain
+                  : copy.practice.listen}
             </button>
             {state.hasListened ? (
               <>
                 <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
                   <Mic size={27} aria-hidden="true" />
-                  <span>Speak English</span>
-                  <small>Say the English word · Up to 8 seconds</small>
+                  <span>{copy.practice.speakEnglish}</span>
+                  <small>{copy.practice.speakHint}</small>
                 </button>
                 <button className="secondary-button skip-button" type="button" onClick={() => skipWord('speaking')}>
-                  Skip this word
+                  {copy.practice.skip}
                   <ChevronRight size={19} aria-hidden="true" />
                 </button>
               </>
@@ -998,7 +1124,7 @@ function PracticeScreen({
         {state.phase === 'playing' ? (
           <div className="processing-state" role="status">
             <Headphones size={30} aria-hidden="true" />
-            <strong>Listen carefully…</strong>
+            <strong>{copy.practice.listenCarefully}</strong>
           </div>
         ) : null}
 
@@ -1011,10 +1137,10 @@ function PracticeScreen({
               <span />
               <span />
             </div>
-            <strong>Listening…</strong>
+            <strong>{copy.practice.listening}</strong>
             <button className="stop-button" type="button" onClick={() => void finishRecording()}>
               <Square size={20} fill="currentColor" aria-hidden="true" />
-              Stop and check
+              {copy.practice.stopAndCheck}
             </button>
           </div>
         ) : null}
@@ -1022,8 +1148,8 @@ function PracticeScreen({
         {state.phase === 'processing' ? (
           <div className="processing-state" role="status">
             <span className="spinner" aria-hidden="true" />
-            <strong>Checking your speech…</strong>
-            <small>The recording is discarded after this check.</small>
+            <strong>{copy.practice.checkingSpeech}</strong>
+            <small>{copy.practice.recordingDiscarded}</small>
           </div>
         ) : null}
 
@@ -1032,22 +1158,24 @@ function PracticeScreen({
             <div className={`speech-feedback outcome-${spokenOutcome}`} role="status">
               <RotateCcw size={21} aria-hidden="true" />
               <div>
-                <strong>{spokenMessages[spokenOutcome]}</strong>
-                {spokenScore !== null && mode === 'learn' ? <small>English pronunciation: {Math.round(spokenScore)} / 100</small> : null}
+                <strong>{copy.practice.spokenMessages[spokenOutcome]}</strong>
+                {spokenScore !== null && mode === 'learn' ? (
+                  <small>{copy.practice.pronunciation(Math.round(spokenScore))}</small>
+                ) : null}
               </div>
             </div>
             <div className="practice-actions ready-to-speak">
               <button className="secondary-button large-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
                 <Speaker size={22} aria-hidden="true" />
-                {playing ? 'Playing…' : 'Listen again'}
+                {playing ? copy.practice.playing : copy.practice.listenAgain}
               </button>
               <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
                 <Mic size={27} aria-hidden="true" />
-                <span>Try speaking again</span>
-                <small>Say the English word · Up to 8 seconds</small>
+                <span>{copy.practice.speakAgain}</span>
+                <small>{copy.practice.speakHint}</small>
               </button>
               <button className="secondary-button skip-button" type="button" onClick={() => skipWord('speaking')}>
-                Skip this word
+                {copy.practice.skip}
                 <ChevronRight size={19} aria-hidden="true" />
               </button>
             </div>
@@ -1059,26 +1187,26 @@ function PracticeScreen({
             <div className={`speech-feedback outcome-${spokenOutcome}`}>
               {spokenOutcome === 'correct' ? <Check size={21} aria-hidden="true" /> : <CircleAlert size={21} aria-hidden="true" />}
               <div>
-                <strong>{spokenMessages[spokenOutcome]}</strong>
-                {spokenScore !== null && mode === 'learn' ? <small>English pronunciation: {Math.round(spokenScore)} / 100</small> : null}
+                <strong>{copy.practice.spokenMessages[spokenOutcome]}</strong>
+                {spokenScore !== null && mode === 'learn' ? (
+                  <small>{copy.practice.pronunciation(Math.round(spokenScore))}</small>
+                ) : null}
               </div>
             </div>
             <form onSubmit={submitSpelling}>
               <fieldset className="spelling-fields">
-                <legend>Now write {prompt.spellingLanguages.length === 2 ? 'both words' : 'the English word'}</legend>
+                <legend>{copy.practice.writeLegend(prompt.spellingLanguages.length)}</legend>
                 {prompt.spellingLanguages.map((language, index) => {
                   const word = prompt.words[language]
                   const outcome = spellingOutcomes[language]
-                  const detail =
-                    language === 'german'
-                      ? 'Write the German meaning of the English cue.'
-                      : prompt.direction === 'english-to-german'
-                        ? 'Write the English word you heard.'
-                        : 'Write the English translation of the German cue.'
+                  const detail = copy.practice.spellingDetail(language, prompt.direction)
                   return (
                     <div className="spelling-field" key={language}>
                       <label htmlFor={`spelling-${language}`}>
-                        {languageNames[language]} {language === 'german' ? 'translation' : 'spelling'}
+                        {copy.practice.spellingLabel(
+                          language,
+                          languageName(copy, language),
+                        )}
                         <small>{detail}</small>
                         <input
                           id={`spelling-${language}`}
@@ -1123,14 +1251,14 @@ function PracticeScreen({
                   )}
                 >
                   {hasCheckedSpelling
-                    ? 'Check again'
+                    ? copy.practice.checkAgain
                     : prompt.spellingLanguages.length === 2
-                      ? 'Check both answers'
-                      : 'Check English spelling'}
+                      ? copy.practice.checkBoth
+                      : copy.practice.checkEnglish}
                   <ChevronRight size={21} aria-hidden="true" />
                 </button>
                 <button className="secondary-button full-width" type="button" onClick={() => skipWord('spelling')}>
-                  Skip this word
+                  {copy.practice.skip}
                 </button>
               </div>
             </form>
@@ -1151,25 +1279,25 @@ function PracticeScreen({
               <div>
                 <strong>
                   {currentAttempt.completion === 'first-try'
-                    ? 'Completed on the first try'
-                    : 'Needs practice'}
+                    ? copy.practice.firstTry
+                    : copy.practice.needsPractice}
                 </strong>
                 <p>
                   {currentAttempt.completion === 'retried'
-                    ? `Completed after ${currentAttempt.retryCount} ${currentAttempt.retryCount === 1 ? 'retry' : 'retries'}.`
+                    ? copy.practice.completedAfterRetries(currentAttempt.retryCount)
                     : currentAttempt.completion === 'skipped'
-                      ? `Skipped during ${currentAttempt.skippedAt === 'speaking' ? 'speaking' : 'writing'}.`
-                      : 'Every check was correct straight away.'}
+                      ? copy.practice.skippedDuring(currentAttempt.skippedAt)
+                      : copy.practice.allCorrect}
                 </p>
               </div>
             </div>
-            <div className="answer-ledger" aria-label="Correct word pair">
+            <div className="answer-ledger" aria-label={copy.practice.correctPair}>
               <div>
-                <span>English</span>
+                <span>{copy.common.english}</span>
                 <strong lang="en-GB">{prompt.words.english.text}</strong>
               </div>
               <div>
-                <span>German</span>
+                <span>{copy.common.german}</span>
                 <strong lang="de-DE">{prompt.words.german.text}</strong>
               </div>
             </div>
@@ -1188,16 +1316,18 @@ function PracticeScreen({
             {storageWarning ? (
               <p className="storage-warning" role="status">
                 <CircleAlert size={18} aria-hidden="true" />
-                {storageWarning}
+                {copy.practice.historyWarning}
               </p>
             ) : null}
             <div className="reveal-actions">
               <button className="secondary-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
                 <Speaker size={20} aria-hidden="true" />
-                {playing ? 'Playing…' : 'Hear the cue again'}
+                {playing ? copy.practice.playing : copy.practice.hearAgain}
               </button>
               <button className="primary-button" type="button" onClick={next}>
-                {state.itemIndex + 1 === state.totalItems ? 'See results' : 'Next word'}
+                {state.itemIndex + 1 === state.totalItems
+                  ? copy.practice.seeResults
+                  : copy.practice.nextWord}
                 <ChevronRight size={21} aria-hidden="true" />
               </button>
             </div>
@@ -1219,6 +1349,7 @@ function ResultsScreen({
   onAgain: () => void
   onDone: () => void
 }) {
+  const { copy } = useUiLanguage()
   const performance = summarizePracticePerformance(attempts)
   const spokenCorrect = attempts.filter(
     (attempt) => attempt.spokenOutcome === 'correct',
@@ -1240,14 +1371,14 @@ function ResultsScreen({
       <div className="result-stamp" aria-hidden="true">
         <Check size={34} />
       </div>
-      <h1>Practice finished</h1>
+      <h1>{copy.results.title}</h1>
       <p className="lede">{exercise.name}</p>
       <section className="performance-summary" aria-labelledby="performance-title">
         <div className="performance-heading">
           <div>
-            <h2 id="performance-title">First-try performance</h2>
+            <h2 id="performance-title">{copy.results.performanceTitle}</h2>
             <p>
-              {performance.firstTry} of {performance.total} words completed without a retry or skip
+              {copy.results.performanceSummary(performance.firstTry, performance.total)}
             </p>
           </div>
           <strong className="performance-score">{performance.percentage}%</strong>
@@ -1255,47 +1386,47 @@ function ResultsScreen({
         <div
           className="performance-track"
           role="progressbar"
-          aria-label="First-try performance"
+          aria-label={copy.results.performanceLabel}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={performance.percentage}
         >
           <span style={{ transform: `scaleX(${performance.percentage / 100})` }} />
         </div>
-        <div className="performance-key" aria-label="Performance breakdown">
-          <span><b>{performance.firstTry}</b> First try</span>
-          <span><b>{performance.retried}</b> Retried</span>
-          <span><b>{performance.skipped}</b> Skipped</span>
+        <div className="performance-key" aria-label={copy.results.breakdownLabel}>
+          <span><b>{performance.firstTry}</b> {copy.results.firstTry}</span>
+          <span><b>{performance.retried}</b> {copy.results.retried}</span>
+          <span><b>{performance.skipped}</b> {copy.results.skipped}</span>
         </div>
       </section>
       <div className="result-ledger">
         <div>
-          <span>English spoken clearly</span>
+          <span>{copy.results.spokenClearly}</span>
           <strong>
             {spokenCorrect}<small> / {attempts.length}</small>
           </strong>
         </div>
         <div>
-          <span>English spelled exactly</span>
+          <span>{copy.results.spelledExactly}</span>
           <strong>
             {englishSpellingCorrect}<small> / {attempts.length}</small>
           </strong>
         </div>
         {germanAttempts.length > 0 ? (
           <div>
-            <span>German translated exactly</span>
+            <span>{copy.results.germanExactly}</span>
             <strong>
               {germanSpellingCorrect}<small> / {germanAttempts.length}</small>
             </strong>
           </div>
         ) : null}
         <div>
-          <span>Worth another look</span>
+          <span>{copy.results.review}</span>
           <strong>{reviewCount}</strong>
         </div>
       </div>
       <section className="word-results" aria-labelledby="word-results-title">
-        <h2 id="word-results-title">Word by word</h2>
+        <h2 id="word-results-title">{copy.results.wordByWord}</h2>
         <ol className="word-result-list">
           {attempts.map((attempt, index) => {
             const entry = entriesById.get(attempt.entryId)
@@ -1317,14 +1448,16 @@ function ResultsScreen({
                   )}
                   <span>
                     <strong>
-                      {attempt.completion === 'first-try' ? 'First try' : 'Needs practice'}
+                      {attempt.completion === 'first-try'
+                        ? copy.results.firstTry
+                        : copy.results.needsPractice}
                     </strong>
                     {attempt.completion === 'retried' ? (
                       <small>
-                        {attempt.retryCount} {attempt.retryCount === 1 ? 'retry' : 'retries'}
+                        {copy.results.retryCount(attempt.retryCount)}
                       </small>
                     ) : attempt.completion === 'skipped' ? (
-                      <small>Skipped</small>
+                      <small>{copy.results.skipped}</small>
                     ) : null}
                   </span>
                 </span>
@@ -1334,16 +1467,15 @@ function ResultsScreen({
         </ol>
       </section>
       <p className="result-note">
-        This is practice feedback, not a test grade. A quiet room and a clear voice help the
-        speech check.
+        {copy.results.note}
       </p>
       <div className="results-actions">
         <button className="secondary-button" type="button" onClick={onDone}>
-          Back to lists
+          {copy.results.back}
         </button>
         <button className="primary-button" type="button" onClick={onAgain}>
           <RotateCcw size={19} aria-hidden="true" />
-          Practise again
+          {copy.results.again}
         </button>
       </div>
     </main>
@@ -1351,35 +1483,36 @@ function ResultsScreen({
 }
 
 function LoadingScreen() {
+  const { copy } = useUiLanguage()
   return (
     <div className="app-shell access-shell">
       <ShellHeader minimal />
       <main className="loading-main" aria-live="polite">
         <span className="spinner cobalt" aria-hidden="true" />
-        <p>Opening your words…</p>
+        <p>{copy.loading.opening}</p>
       </main>
     </div>
   )
 }
 
 function StorageUnavailableScreen() {
+  const { copy } = useUiLanguage()
   return (
     <div className="app-shell access-shell">
       <ShellHeader minimal />
       <main className="access-main">
         <section className="access-card" aria-labelledby="storage-title">
           <CircleAlert className="access-icon" size={30} aria-hidden="true" />
-          <h1 id="storage-title">Local storage is unavailable</h1>
+          <h1 id="storage-title">{copy.storage.title}</h1>
           <p className="lede">
-            Safari could not open the word lists on this device. Check that private browsing
-            is off and that storage is available, then reload the app.
+            {copy.storage.description}
           </p>
           <button
             className="primary-button full-width"
             type="button"
             onClick={() => window.location.reload()}
           >
-            Try again
+            {copy.storage.retry}
           </button>
         </section>
       </main>
@@ -1387,7 +1520,8 @@ function StorageUnavailableScreen() {
   )
 }
 
-export default function App() {
+function AppContent() {
+  const { copy } = useUiLanguage()
   const [session, setSession] = useState<SessionState>('loading')
   const [exercises, setExercises] = useState<ExerciseSet[]>([])
   const [view, setView] = useState<View>({ name: 'library' })
@@ -1466,7 +1600,7 @@ export default function App() {
   }
 
   async function removeExercise(exercise: ExerciseSet) {
-    if (!window.confirm(`Delete “${exercise.name}” and its local practice history?`)) {
+    if (!window.confirm(copy.library.deleteConfirmation(exercise.name))) {
       return
     }
     await deleteExercise(exercise.id)
@@ -1553,17 +1687,25 @@ export default function App() {
       {session === 'local-only' && online ? (
         <div className="offline-notice" role="status">
           <CircleAlert size={18} aria-hidden="true" />
-          The private service cannot be reached. You can still edit local word lists.
+          {copy.notices.localOnly}
         </div>
       ) : null}
       {content}
       {view.name !== 'practice' ? (
         <footer>
-          <span>Stored only on this device</span>
+          <span>{copy.footer.local}</span>
           <span aria-hidden="true">•</span>
-          <span>No points or streaks</span>
+          <span>{copy.footer.noScores}</span>
         </footer>
       ) : null}
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   )
 }

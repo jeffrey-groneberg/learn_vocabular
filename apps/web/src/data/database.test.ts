@@ -4,10 +4,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   deleteExercise,
   getDatabase,
+  getPreference,
   listExercises,
   resetDatabaseForTests,
   saveAttempt,
   saveExercise,
+  savePreference,
 } from './database.js'
 
 afterEach(async () => {
@@ -49,5 +51,15 @@ describe('local vocabulary database', () => {
     await deleteExercise(exercise.id)
     expect(await listExercises()).toEqual([])
     expect(await (await getDatabase()).getAll('attempts')).toEqual([])
+  })
+
+  it('persists preferences independently from exercise data', async () => {
+    expect(await getPreference('ui-language')).toBeUndefined()
+
+    await savePreference('ui-language', 'de')
+    expect(await getPreference('ui-language')).toBe('de')
+
+    await savePreference('ui-language', 'en')
+    expect(await getPreference('ui-language')).toBe('en')
   })
 })
