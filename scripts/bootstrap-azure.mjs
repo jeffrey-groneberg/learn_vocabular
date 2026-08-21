@@ -19,6 +19,7 @@ import {
 
 async function ensureSecrets(rotate) {
   const services = {
+    familyCode: 'vocabulary-voice-tutor.family-access-code',
     accessHash: 'vocabulary-voice-tutor.access-code-hash',
     cookie: 'vocabulary-voice-tutor.cookie-signing-key',
     pepper: 'vocabulary-voice-tutor.rate-limit-pepper',
@@ -37,6 +38,7 @@ async function ensureSecrets(rotate) {
   const { createAccessCodeHash } = await import(
     '../apps/web/server/security/access-code.ts'
   )
+  keychainWrite(services.familyCode, first)
   keychainWrite(services.accessHash, await createAccessCodeHash(first))
   keychainWrite(services.cookie, randomBytes(32).toString('base64url'))
   keychainWrite(services.pepper, randomBytes(32).toString('base64url'))

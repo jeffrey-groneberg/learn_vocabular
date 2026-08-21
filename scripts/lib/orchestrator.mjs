@@ -14,6 +14,7 @@ export function run(command, args, options = {}) {
     env: options.env ?? process.env,
     encoding: 'utf8',
     stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+    timeout: options.timeout,
   })
   if (result.status !== 0) {
     const detail = options.capture ? result.stderr.trim() : ''

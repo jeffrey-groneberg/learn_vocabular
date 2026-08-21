@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build && tsup server/index.ts server/cleanup.ts --format esm --platform node --target node24 --out-dir dist-server --clean --no-splitting",
     "lint": "oxlint src server",
     "preview": "vite preview",
-    "start": "node dist-server/index.js",
+    "start": "node --import @azure/monitor-opentelemetry/loader dist-server/index.js",
     "typecheck": "tsc -b"
   },
   "dependencies": {

@@ -1,5 +1,6 @@
 import {
   hiddenPrompt,
+  keychainRead,
   outputValue,
   prepareLocalState,
   requireCommand,
@@ -7,6 +8,7 @@ import {
   terraformOutput,
   verifyAzureContext,
 } from './lib/orchestrator.mjs'
+import { randomBytes } from 'node:crypto'
 
 async function expectStatus(url, expected) {
   const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(20_000) })
@@ -16,17 +18,22 @@ async function expectStatus(url, expected) {
   return response
 }
 
-async function checkTrace(resourceGroup, appName) {
+async function checkTrace(resourceGroup, appName, traceId) {
   const query = [
     'requests',
-    '| where timestamp > ago(15m)',
+    `| where timestamp > ago(15m) and operation_Id == "${traceId}"`,
+    '| where cloud_RoleName == "vocabulary-gateway"',
     '| where name contains "/api/tts"',
     '| project operation_Id',
-    '| join kind=inner (dependencies | where timestamp > ago(15m) and name == "speech.tts" | project operation_Id) on operation_Id',
+    '| join kind=inner (dependencies',
+    `  | where timestamp > ago(15m) and operation_Id == "${traceId}"`,
+    '  | where cloud_RoleName == "vocabulary-api" and name == "speech.tts"',
+    '  | project operation_Id) on operation_Id',
     '| take 1',
   ].join(' ')
 
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  const deadline = Date.now() + 120_000
+  while (Date.now() < deadline) {
     const result = run(
       'az',
       [
@@ -44,12 +51,14 @@ async function checkTrace(resourceGroup, appName) {
         '--output',
         'tsv',
       ],
-      { capture: true },
+      { capture: true, timeout: Math.min(20_000, deadline - Date.now()) },
     )
     if (Number(result) > 0) {
       return
     }
-    await new Promise((resolveWait) => setTimeout(resolveWait, 15_000))
+    await new Promise((resolveWait) =>
+      setTimeout(resolveWait, Math.min(10_000, Math.max(0, deadline - Date.now()))),
+    )
   }
   throw new Error('Correlated gateway-to-Speech telemetry did not arrive within two minutes')
 }
@@ -85,7 +94,12 @@ async function main() {
   await expectStatus(`https://${apiFqdn}/health/live`, 404)
 
   if (!process.argv.includes('--platform-only')) {
-    const code = await hiddenPrompt('Family access code for authenticated smoke tests: ')
+    const code = process.argv.includes('--keychain')
+      ? keychainRead('vocabulary-voice-tutor.family-access-code')
+      : await hiddenPrompt('Family access code for authenticated smoke tests: ')
+    if (!code) {
+      throw new Error('The family access code is unavailable')
+    }
     const login = await fetch(`${webUrl}/api/session`, {
       method: 'POST',
       headers: {
@@ -103,10 +117,14 @@ async function main() {
     if (!cookie) {
       throw new Error('Family session did not issue a secure cookie')
     }
-    const session = await fetch(`${webUrl}/api/session`, { headers: { cookie } })
+    const session = await fetch(`${webUrl}/api/session`, {
+      headers: { cookie },
+      signal: AbortSignal.timeout(20_000),
+    })
     if (!session.ok || (await session.json()).authenticated !== true) {
       throw new Error('Issued family session was not accepted')
     }
+    const traceId = randomBytes(16).toString('hex')
     const tts = await fetch(`${webUrl}/api/tts`, {
       method: 'POST',
       headers: {
@@ -114,6 +132,7 @@ async function main() {
         origin: webUrl,
         'sec-fetch-site': 'same-origin',
         'content-type': 'application/json',
+        traceparent: `00-${traceId}-${randomBytes(8).toString('hex')}-01`,
       },
       body: JSON.stringify({ text: 'apple', locale: 'en-GB' }),
       signal: AbortSignal.timeout(30_000),
@@ -121,11 +140,18 @@ async function main() {
     if (!tts.ok || !tts.headers.get('content-type')?.startsWith('audio/')) {
       throw new Error(`TTS smoke test failed with ${tts.status}`)
     }
-    await fetch(`${webUrl}/api/logout`, {
+    const logout = await fetch(`${webUrl}/api/logout`, {
       method: 'POST',
       headers: { cookie, origin: webUrl, 'sec-fetch-site': 'same-origin' },
+      signal: AbortSignal.timeout(20_000),
     })
-    await checkTrace(resourceGroup, resources.application_insights)
+    if (
+      logout.status !== 204 ||
+      !logout.headers.getSetCookie()[0]?.startsWith('__Host-vocabulary-voice-tutor=')
+    ) {
+      throw new Error('Logout smoke test failed')
+    }
+    await checkTrace(resourceGroup, resources.application_insights, traceId)
   }
 
   process.stdout.write('Azure smoke checks passed.\n')

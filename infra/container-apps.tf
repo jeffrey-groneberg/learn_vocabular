@@ -130,8 +130,9 @@ resource "azurerm_container_app" "web" {
       }
 
       env {
-        name  = "INTERNAL_API_URL"
-        value = "https://vocabulary-api"
+        name = "INTERNAL_API_URL"
+        # ACA short-name service discovery uses HTTP; environment peer encryption protects this hop.
+        value = "http://vocabulary-api"
       }
 
       env {
@@ -362,7 +363,12 @@ resource "azurerm_container_app_job" "cleanup" {
       cpu    = 0.25
       memory = "0.5Gi"
 
-      command = ["node", "dist-server/cleanup.js"]
+      command = [
+        "node",
+        "--import",
+        "@azure/monitor-opentelemetry/loader",
+        "dist-server/cleanup.js",
+      ]
 
       env {
         name  = "AZURE_CLIENT_ID"

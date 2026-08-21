@@ -55,6 +55,7 @@ export function startNodeTelemetry(role: RuntimeRole): void {
     enableTraceBasedSamplingForLogs: true,
     instrumentationOptions: {
       http,
+      azureSdk: { enabled: false },
       console: { enabled: false },
     },
   })

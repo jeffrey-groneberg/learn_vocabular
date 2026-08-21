@@ -129,10 +129,11 @@ the signed-in Azure CLI identity.
 npm run azure:bootstrap
 ```
 
-Bootstrap prompts invisibly for the family code, stores only its salted scrypt
-hash, generates three independent random keys, and writes those values to macOS
-Keychain. It creates and displays a saved Terraform plan and applies only after
-the operator types `apply`.
+Bootstrap prompts invisibly for the family code, keeps the code and its salted
+scrypt hash only in macOS Keychain, and generates three independent random
+keys there. Only the hash is deployed to Key Vault. Bootstrap creates and
+displays a saved Terraform plan and applies only after the operator types
+`apply`.
 
 After shared infrastructure exists:
 
@@ -165,6 +166,13 @@ Run the full production checks at any time:
 
 ```sh
 npm run azure:smoke
+```
+
+For unattended checks on this Mac, read the family code from Keychain instead
+of prompting:
+
+```sh
+npm run azure:smoke -- --keychain
 ```
 
 This verifies public web health, external API isolation, family session
