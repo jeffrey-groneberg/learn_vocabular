@@ -29,6 +29,12 @@ typography:
     lineHeight: 1.08
     letterSpacing: "-0.025em"
     fontVariation: "'wght' 720"
+  performance-metric:
+    fontFamily: "'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif"
+    fontSize: "clamp(2.2rem, 12vw, 3.4rem)"
+    lineHeight: 0.9
+    letterSpacing: "-0.04em"
+    fontVariation: "'wght' 780"
   body:
     fontFamily: "'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif"
     fontSize: "1rem"
@@ -154,12 +160,12 @@ The palette behaves like printed school-lab stock: warm paper and navy ink carry
 - **Selection Blue** (`#dce6ff`): Selected choice cards, processing panels, and neutral speech feedback.
 
 ### Secondary
-- **Coral Index** (`#e54b2b`): Cabinet tabs, the progress fill, visible focus outlines, and error borders.
+- **Coral Index** (`#e54b2b`): Cabinet tabs, the active-practice progress fill, visible focus outlines, and error borders.
 - **Recording Coral** (`#b3311d`): The large microphone action only; its deeper value keeps white action text legible.
 
 ### Tertiary
 - **Specimen Yellow** (`#f9d651`): Offline and storage notices, the stop control, the empty drawer, and the result stamp.
-- **Correct Green** (`#197353`) with **Correct Wash** (`#dcefe7`): Correct speech and spelling feedback.
+- **Correct Green** (`#197353`) with **Correct Wash** (`#dcefe7`): Correct speech and spelling feedback, first-try status, and the final performance fill.
 - **Error Wash** (`#f8dfda`): Error and incorrect-result backgrounds, always paired with dark red copy and a coral border.
 
 ### Neutral
@@ -172,7 +178,7 @@ The palette behaves like printed school-lab stock: warm paper and navy ink carry
 ### Named Rules
 **The Cabinet Palette Rule.** Warm Stock is the field, Clean Stock is the object, Cabinet Navy supplies structure, and Cabinet Cobalt identifies action or selection. Do not flatten those four jobs into one generic white-and-blue surface.
 
-**The Feedback Has a Job Rule.** Coral marks focus, failure, or a physical index tab; yellow marks attention; green marks correctness. These hues are never free decoration, and state always includes an icon plus words.
+**The Feedback Has a Job Rule.** Coral marks focus, failure, or a physical index tab; yellow marks attention and the shared Needs practice state for retries or skips; green marks exact correctness and first-try performance. These hues are never free decoration, and state always includes an icon plus words.
 
 ## Typography
 
@@ -185,6 +191,7 @@ The palette behaves like printed school-lab stock: warm paper and navy ink carry
 ### Hierarchy
 - **Headline** (`'wght' 720`, `clamp(2rem, 7vw, 3.5rem)`, line-height `0.98`, tracking `-0.045em`): Page-level `h1` titles.
 - **Title** (`'wght' 720`, `1.45rem`, line-height `1.08`, tracking `-0.025em`): Drawer names, section-level `h2` titles, audio-cue headings, and post-check answer-ledger words.
+- **Performance Metric** (`'wght' 780`, `clamp(2.2rem, 12vw, 3.4rem)`, line-height `0.9`, tracking `-0.04em`): The first-try percentage on the finished-practice sheet only.
 - **Body** (`400`, `1rem`, normal line-height): Default reading and explanatory copy; selected ledes lengthen to line-height `1.5`.
 - **Field Label** (`680`, `1rem`): Form labels and direct instructions.
 - **Specimen Meta** (`'wght' 800`, about `0.72-0.76rem`, tracking `0.08-0.1em`): Language codes, row numbers, table headings, and practice mode/direction metadata.
@@ -201,7 +208,7 @@ The app is a mobile-first vertical shell with a safe-area-aware header, flexible
 
 The recurring spatial rhythm is approximately `0.45 / 0.7 / 0.8 / 1 / 1.2 / 1.5rem`, with `2-3px` structural strokes doing as much grouping work as whitespace. Drawer cards use `repeat(auto-fit, minmax(min(100%, 285px), 1fr))` with a `1.4rem` gap. Safe-area insets are included at every screen edge that can meet iPhone chrome.
 
-At `640px` and wider, bilingual word rows and mode choices become two-column layouts, the replay and English-pronunciation actions split into a `0.72fr / 1.28fr` pair after the first listen, and the specimen gains more padding. At `520px` and narrower, page headings stack, paired result actions collapse to one column, and editor actions become a sticky bottom bar. The supported canvas never shrinks below `320px`; the installed PWA declares portrait orientation.
+At `640px` and wider, bilingual word rows and mode choices become two-column layouts, the replay and English-pronunciation actions split into a `0.72fr / 1.28fr` pair after the first listen, spelling check and skip actions pair up, and the specimen gains more padding. At `520px` and narrower, page headings stack, paired result actions collapse to one column, the performance key becomes a vertical inventory, word statuses move beneath their word pair, and editor actions become a sticky bottom bar. The supported canvas never shrinks below `320px`; the installed PWA declares portrait orientation.
 
 ## Elevation & Depth
 
@@ -228,7 +235,7 @@ Coral top tabs are the recurring silhouette on important trays: `13px` high and 
 
 ### Buttons
 - **Primary:** Cobalt fill, white text, `2px` navy border, `8px` radius, `0.7rem 1rem` padding, and at least `48px` height. It presses down `2px`, shortens its shadow, receives a `3px` coral focus ring with `3px` offset, and drops to `0.5` opacity when disabled.
-- **Secondary:** Clean Stock fill, navy text and `2px` navy border at the same size and radius. It carries cancel, the initially solo and later replayable Listen action, retry, and back-to-list actions.
+- **Secondary:** Clean Stock fill, navy text and `2px` navy border at the same size and radius. It carries cancel, the initially solo and later replayable Listen action, retry, skip, and back-to-list actions.
 - **Text / Back:** Transparent with cobalt text and at least `44px` height. Danger text shifts to the shipped dark red literal; icon-only actions remain `44-46px` square.
 - **Record / Stop:** After the first listen, the record control is the largest action at `76px`, uses Recording Coral with a `3px` navy border, and always requests English pronunciation. The stop action switches to Specimen Yellow inside a full-cobalt recording state.
 
@@ -249,10 +256,13 @@ Each reusable word-list drawer is Clean Stock with a `3px` navy frame, square co
 Mode cards are at least `88px` tall with a `2px` grey border and a hidden native radio. Selected cards switch to Selection Blue with cobalt border and navy text; focus lands on the entire label through `:has(input:focus-visible)`. Direction rows use the same state grammar at a denser `51px` height.
 
 ### Practice Specimen
-The signature learning surface is a square Clean Stock sheet with a `3px` navy frame, the shared specimen-sheet shadow, and a coral top tab. It presents compact direction/mode metadata, an audio-only cue, and a 17-tick measurement line; neither English nor German orthography appears before checking. Listen is initially the only practice action and remains replayable after first use, when the Speak English control appears and English pronunciation is always assessed. English-to-German then collects German writing followed by English writing; German-to-English collects English writing only. Canonical English and German words appear only in the post-check answer ledger.
+The signature learning surface is a square Clean Stock sheet with a `3px` navy frame, the shared specimen-sheet shadow, and a coral top tab. It presents compact direction/mode metadata, an audio-only cue, and a 17-tick measurement line; neither English nor German orthography appears before checking. Listen is initially the only practice action and remains replayable after first use, when Speak English and Skip this word appear. English pronunciation must pass before writing; unsuccessful speech keeps replay, retry, and skip together. English-to-German then collects German writing followed by English writing; German-to-English collects English writing only. Each written field stays open until exactly correct or skipped, with already-correct fields locked in green. Minor-typo and incorrect feedback never reveals the answer. Canonical English and German words appear only in the post-check answer ledger.
 
 ### Feedback Panels
-Feedback panels are square, bordered, icon-led rows with `0.9rem` padding. Neutral speech feedback uses Selection Blue, correct feedback uses Correct Wash and green, minor typo uses the shipped yellow wash and ochre literals, and incorrect/error feedback uses Error Wash with coral. The words state the outcome; color only reinforces it.
+Feedback panels are square, bordered, icon-led rows with `0.9rem` padding. Neutral speech feedback uses Selection Blue, correct feedback uses Correct Wash and green, minor typo uses the shipped yellow wash and ochre literals, and incorrect/error feedback uses Error Wash with coral. Retried and skipped words share the yellow Needs practice treatment but retain explicit retry-count or skipped copy. The words state the outcome; color only reinforces it.
+
+### Performance Results
+The finished-practice sheet measures only first-try completion: a green linear bar and percentage report words completed without a retry or skip. A compact key separates first try, retried, and skipped counts. The square word-by-word ledger repeats the canonical pair and gives every item an icon-led status; first-try words use Correct Wash, while retried and skipped words both read Needs practice in yellow and remain distinguishable through their secondary label. This is private practice feedback, never points, a streak, or a grade.
 
 ## Do's and Don'ts
 
@@ -262,6 +272,7 @@ Feedback panels are square, bordered, icon-led rows with `0.9rem` padding. Neutr
 - **Do** keep touch targets at the shipped `44-76px` minimum heights and preserve iPhone safe-area padding.
 - **Do** use coral tabs, ruler ticks, row numbers, ledgers, and stamps only when they identify or measure real content.
 - **Do** pair every correctness, warning, and error color with an icon and explicit calm copy.
+- **Do** count only first-try words in the performance percentage and preserve retry/skip evidence in the word ledger.
 - **Do** preserve the `640px` expansion and `520px` compact behaviors when adding screens.
 - **Do** honor `prefers-reduced-motion` by collapsing animation and transition durations to `0.01ms`.
 

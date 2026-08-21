@@ -40,6 +40,8 @@ describe('local vocabulary database', () => {
       spokenOutcome: 'correct',
       spellingOutcome: 'correct',
       germanSpellingOutcome: 'correct',
+      completion: 'first-try',
+      retryCount: 0,
       attemptedAt: '2026-01-01T00:01:00.000Z',
     })
 

@@ -7,6 +7,8 @@ import {
   initialPracticeState,
   normalizeAnswer,
   practiceReducer,
+  summarizePracticePerformance,
+  type AttemptSummary,
 } from './index.js'
 
 describe('answer normalization', () => {
@@ -52,9 +54,9 @@ describe('practice state machine', () => {
     expect(state.phase).toBe('recording')
     state = practiceReducer(state, { type: 'RECORDED' })
     expect(state.phase).toBe('processing')
-    state = practiceReducer(state, { type: 'SPEECH_FINISHED' })
+    state = practiceReducer(state, { type: 'SPEECH_FINISHED', passed: true })
     expect(state.phase).toBe('spelling')
-    state = practiceReducer(state, { type: 'SPELLING_SUBMITTED' })
+    state = practiceReducer(state, { type: 'SPELLING_SUBMITTED', passed: true })
     state = practiceReducer(state, { type: 'PLAY' })
     expect(state.phase).toBe('playing')
     state = practiceReducer(state, { type: 'PLAY_FINISHED' })
@@ -69,8 +71,8 @@ describe('practice state machine', () => {
     state = practiceReducer(state, { type: 'PLAY_FINISHED' })
     state = practiceReducer(state, { type: 'RECORD' })
     state = practiceReducer(state, { type: 'RECORDED' })
-    state = practiceReducer(state, { type: 'SPEECH_FINISHED' })
-    state = practiceReducer(state, { type: 'SPELLING_SUBMITTED' })
+    state = practiceReducer(state, { type: 'SPEECH_FINISHED', passed: true })
+    state = practiceReducer(state, { type: 'SPELLING_SUBMITTED', passed: true })
     state = practiceReducer(state, { type: 'PLAY' })
     state = practiceReducer(state, { type: 'FAIL', message: 'Playback failed' })
     expect(state).toMatchObject({ phase: 'revealed', error: 'Playback failed' })
@@ -85,6 +87,61 @@ describe('practice state machine', () => {
     ready = practiceReducer(ready, { type: 'PLAY_FINISHED' })
     const recording = practiceReducer(ready, { type: 'RECORD' })
     expect(practiceReducer(recording, { type: 'PLAY' })).toEqual(recording)
+  })
+
+  it('keeps speech and spelling open until they pass or the word is skipped', () => {
+    let state = initialPracticeState(1, 'learn')
+    expect(practiceReducer(state, { type: 'SKIP' })).toEqual(state)
+    state = practiceReducer(state, { type: 'PLAY' })
+    state = practiceReducer(state, { type: 'PLAY_FINISHED' })
+    state = practiceReducer(state, { type: 'RECORD' })
+    state = practiceReducer(state, { type: 'RECORDED' })
+    state = practiceReducer(state, { type: 'SPEECH_FINISHED', passed: false })
+    expect(state.phase).toBe('speech-retry')
+
+    state = practiceReducer(state, { type: 'RECORD' })
+    state = practiceReducer(state, { type: 'RECORDED' })
+    state = practiceReducer(state, { type: 'SPEECH_FINISHED', passed: true })
+    state = practiceReducer(state, { type: 'SPELLING_SUBMITTED', passed: false })
+    expect(state.phase).toBe('spelling')
+
+    state = practiceReducer(state, { type: 'SKIP' })
+    expect(state.phase).toBe('revealed')
+  })
+})
+
+describe('practice performance', () => {
+  function attempt(
+    completion: AttemptSummary['completion'],
+    retryCount = 0,
+  ): AttemptSummary {
+    return {
+      id: `attempt-${completion}-${retryCount}`,
+      exerciseId: 'set-1',
+      entryId: `entry-${completion}-${retryCount}`,
+      mode: 'learn',
+      direction: 'english-to-german',
+      completion,
+      retryCount,
+      attemptedAt: '2026-01-01T00:00:00.000Z',
+    }
+  }
+
+  it('bases the percentage only on first-try completions', () => {
+    expect(
+      summarizePracticePerformance([
+        attempt('first-try'),
+        attempt('retried', 1),
+        attempt('skipped'),
+        attempt('first-try'),
+      ]),
+    ).toEqual({
+      total: 4,
+      firstTry: 2,
+      retried: 1,
+      skipped: 1,
+      percentage: 50,
+    })
   })
 })
 

@@ -5,13 +5,14 @@ export type PracticePhase =
   | 'playing'
   | 'recording'
   | 'processing'
+  | 'speech-retry'
   | 'spelling'
   | 'revealed'
   | 'complete'
 
 export interface PracticeState {
   phase: PracticePhase
-  phaseAfterPlayback: 'ready' | 'revealed'
+  resumePhase: 'ready' | 'speech-retry' | 'revealed'
   itemIndex: number
   totalItems: number
   mode: PracticeMode
@@ -25,18 +26,20 @@ export type PracticeEvent =
   | { type: 'RECORD' }
   | { type: 'CANCEL_RECORDING' }
   | { type: 'RECORDED' }
-  | { type: 'SPEECH_FINISHED' }
-  | { type: 'SPELLING_SUBMITTED' }
+  | { type: 'SPEECH_FINISHED'; passed: boolean }
+  | { type: 'SPELLING_SUBMITTED'; passed: boolean }
+  | { type: 'SKIP' }
   | { type: 'NEXT' }
   | { type: 'FAIL'; message: string }
   | { type: 'RETRY' }
 
 const allowedEvents: Record<PracticePhase, readonly PracticeEvent['type'][]> = {
-  ready: ['PLAY', 'RECORD', 'FAIL'],
+  ready: ['PLAY', 'RECORD', 'SKIP', 'FAIL'],
   playing: ['PLAY_FINISHED', 'FAIL'],
   recording: ['CANCEL_RECORDING', 'RECORDED', 'FAIL'],
   processing: ['SPEECH_FINISHED', 'FAIL'],
-  spelling: ['SPELLING_SUBMITTED', 'FAIL'],
+  'speech-retry': ['PLAY', 'RECORD', 'SKIP', 'FAIL'],
+  spelling: ['SPELLING_SUBMITTED', 'SKIP', 'FAIL'],
   revealed: ['PLAY', 'NEXT', 'FAIL'],
   complete: [],
 }
@@ -51,7 +54,7 @@ export function initialPracticeState(
 
   return {
     phase: 'ready',
-    phaseAfterPlayback: 'ready',
+    resumePhase: 'ready',
     itemIndex: 0,
     totalItems,
     mode,
@@ -72,6 +75,10 @@ export function practiceReducer(
     return state
   }
 
+  if (event.type === 'SKIP' && state.phase === 'ready' && !state.hasListened) {
+    return state
+  }
+
   if (!allowedEvents[state.phase].includes(event.type)) {
     return state
   }
@@ -81,25 +88,35 @@ export function practiceReducer(
       return {
         ...state,
         phase: 'playing',
-        phaseAfterPlayback: state.phase === 'revealed' ? 'revealed' : 'ready',
+        resumePhase:
+          state.phase === 'revealed' || state.phase === 'speech-retry'
+            ? state.phase
+            : 'ready',
         error: null,
       }
     case 'PLAY_FINISHED':
       return {
         ...state,
-        phase: state.phaseAfterPlayback,
+        phase: state.resumePhase,
         hasListened: true,
       }
     case 'RECORD':
-      return { ...state, phase: 'recording', error: null }
+      return {
+        ...state,
+        phase: 'recording',
+        resumePhase: state.phase === 'speech-retry' ? 'speech-retry' : 'ready',
+        error: null,
+      }
     case 'CANCEL_RECORDING':
-      return { ...state, phase: 'ready' }
+      return { ...state, phase: state.resumePhase }
     case 'RECORDED':
       return { ...state, phase: 'processing' }
     case 'SPEECH_FINISHED':
-      return { ...state, phase: 'spelling' }
+      return { ...state, phase: event.passed ? 'spelling' : 'speech-retry' }
     case 'SPELLING_SUBMITTED':
-      return { ...state, phase: 'revealed' }
+      return { ...state, phase: event.passed ? 'revealed' : 'spelling' }
+    case 'SKIP':
+      return { ...state, phase: 'revealed', error: null }
     case 'NEXT': {
       const nextIndex = state.itemIndex + 1
       return nextIndex >= state.totalItems
@@ -107,7 +124,7 @@ export function practiceReducer(
         : {
             ...state,
             phase: 'ready',
-            phaseAfterPlayback: 'ready',
+            resumePhase: 'ready',
             itemIndex: nextIndex,
             hasListened: false,
             error: null,
@@ -116,7 +133,12 @@ export function practiceReducer(
     case 'FAIL':
       return {
         ...state,
-        phase: state.phase === 'playing' ? state.phaseAfterPlayback : 'ready',
+        phase:
+          state.phase === 'playing' ||
+          state.phase === 'recording' ||
+          state.phase === 'processing'
+            ? state.resumePhase
+            : state.phase,
         error: event.message,
       }
     case 'RETRY':

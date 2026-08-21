@@ -45,6 +45,8 @@ export type SpokenOutcome =
   | 'service-unavailable'
 
 export type SpellingOutcome = 'correct' | 'minor-typo' | 'incorrect'
+export type AttemptCompletion = 'first-try' | 'retried' | 'skipped'
+export type SkippedPracticeStep = 'speaking' | 'spelling'
 
 export interface AttemptSummary {
   id: string
@@ -52,9 +54,12 @@ export interface AttemptSummary {
   entryId: string
   mode: PracticeMode
   direction: Exclude<PracticeDirection, 'mixed'>
-  spokenOutcome: SpokenOutcome
+  spokenOutcome?: SpokenOutcome
   /** English spelling is the primary written outcome in every direction. */
-  spellingOutcome: SpellingOutcome
+  spellingOutcome?: SpellingOutcome
   germanSpellingOutcome?: SpellingOutcome
+  completion: AttemptCompletion
+  retryCount: number
+  skippedAt?: SkippedPracticeStep
   attemptedAt: string
 }

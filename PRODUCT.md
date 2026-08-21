@@ -42,6 +42,10 @@ evaluation while keeping the learner's library and progress on the iPhone.
   German translation and English spelling.
 - German-to-English plays German, assesses spoken English, then collects the
   English spelling.
+- Speaking and every required written answer repeat until they are exactly
+  correct or the learner explicitly skips the word.
+- Results measure first-try performance only; retried and skipped words are
+  both marked as needing practice and remain distinguishable word by word.
 - Learn mode reports the pronunciation score; Test mode withholds it until the
   canonical pair is revealed.
 - Speech operations require a network connection; editing and locally cached
@@ -54,8 +58,9 @@ evaluation while keeping the learner's library and progress on the iPhone.
   direction-specific audio cue.
 - Scripted English (`en-GB`) Azure Speech Pronunciation Assessment with a strict
   `80/100` pass threshold in every direction.
-- Exact spelling passes; Damerau-Levenshtein distance one is accepted as a
-  minor typo while the correction is shown.
+- Exact spelling passes. Damerau-Levenshtein distance one receives specific
+  minor-typo feedback but still requires another attempt; the canonical answer
+  stays hidden until the word is correct or skipped.
 - Exercise sets, preferences, attempts, and progress stay in IndexedDB on the
   learner's device.
 - Microphone audio and generated replay audio are transient and never persisted.

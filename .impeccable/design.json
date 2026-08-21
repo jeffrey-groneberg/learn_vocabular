@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-21T11:05:10.962Z",
+  "generatedAt": "2026-08-21T11:45:00.000Z",
   "title": "Design System: Vocabulary Voice Tutor",
   "extensions": {
     "colorMeta": {
@@ -210,6 +210,10 @@
         "displayName": "Drawer Title",
         "purpose": "Drawer names, section-level h2 titles, audio-cue headings, and post-check answer-ledger words."
       },
+      "performance-metric": {
+        "displayName": "Performance Metric",
+        "purpose": "The first-try percentage on the finished-practice sheet only."
+      },
       "body": {
         "displayName": "Body",
         "purpose": "Default reading and explanatory copy."
@@ -253,7 +257,7 @@
       {
         "name": "progress-fill",
         "value": "transform 220ms ease",
-        "purpose": "Advances the practice progress track with scaleX()."
+        "purpose": "Advances the active-practice and final first-try performance tracks with scaleX()."
       },
       {
         "name": "recording-soundbar",
@@ -302,7 +306,7 @@
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "The clean-stock alternative for cancel, the initially solo and later replayable Listen action, retry, and return actions.",
+      "description": "The clean-stock alternative for cancel, the initially solo and later replayable Listen action, retry, skip, and return actions.",
       "html": "<button class=\"ds-secondary-button\"><svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg>Word lists</button>",
       "css": ".ds-secondary-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; padding: 0.7rem 1rem; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--paper-light, #fffdf7); color: var(--cobalt-dark, #102454); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-secondary-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; } .ds-secondary-button:disabled { cursor: not-allowed; opacity: 0.5; }"
     },
@@ -342,7 +346,7 @@
       "name": "Practice Specimen",
       "kind": "custom",
       "refersTo": "practice-specimen",
-      "description": "The signature sheet shows no English or German orthography before checking: Listen starts as the sole action and stays replayable; English pronunciation always follows; EN→DE collects German then English writing, DE→EN English writing; canonical words appear only in the post-check ledger.",
+      "description": "The signature sheet shows no English or German orthography before checking: Listen starts as the sole action and stays replayable; English pronunciation and every required written answer repeat until exactly correct or explicitly skipped; EN→DE collects German then English writing, DE→EN English writing; canonical words appear only in the post-check ledger.",
       "html": "<section class=\"ds-practice-specimen\"><div class=\"ds-practice-meta\"><span>EN -&gt; DE</span><span>LEARN</span></div><p class=\"ds-prompt-label\">Audio cue</p><div class=\"ds-audio-cue\"><svg viewBox=\"0 0 24 24\" width=\"44\" height=\"44\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 14a8 8 0 0 1 16 0\"/><path d=\"M18 19c0 1.1-.9 2-2 2h-1v-7h3a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2Z\"/><path d=\"M6 19c-1.1 0-2-.9-2-2v-1a2 2 0 0 1 2-2h3v7H6Z\"/></svg><div><strong>Listen to the English word</strong><small>No English or German spelling appears until your checks are complete.</small></div></div><div class=\"ds-measurement-line\" aria-hidden=\"true\"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class=\"ds-practice-actions\"><button class=\"ds-listen-button\" type=\"button\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M11 5 6 9H2v6h4l5 4Z\"/><path d=\"M15.5 8.5a5 5 0 0 1 0 7\"/><path d=\"M18.5 5.5a9 9 0 0 1 0 13\"/></svg>Listen</button></div></section>",
       "css": ".ds-practice-specimen { position: relative; padding: 1.2rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 0; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); box-shadow: 6px 10px 24px rgba(16, 36, 84, 0.16); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-practice-specimen::before { content: ''; width: 72px; height: 13px; position: absolute; top: 0; right: 35px; border: 3px solid var(--cobalt-dark, #102454); border-top: 0; background: var(--coral, #e54b2b); } .ds-practice-meta { display: flex; justify-content: space-between; margin: 0.35rem 0 2rem; color: var(--cobalt, #1747d1); font-size: 0.72rem; letter-spacing: 0.1em; font-variation-settings: 'wght' 800; } .ds-prompt-label { margin: 0 0 0.45rem; color: var(--muted, #626a78); font-size: 0.8rem; letter-spacing: 0.04em; font-variation-settings: 'wght' 700; } .ds-audio-cue { min-height: 150px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 1rem; padding: 1.2rem; border: 2px dashed var(--rule, #c9c3b5); background: var(--paper, #f4f0e7); color: var(--cobalt-dark, #102454); } .ds-audio-cue > svg { color: var(--cobalt, #1747d1); } .ds-audio-cue strong, .ds-audio-cue small { display: block; } .ds-audio-cue strong { font-size: 1.45rem; line-height: 1.08; font-variation-settings: 'wght' 720; } .ds-audio-cue small { margin-top: 0.45rem; color: var(--muted, #626a78); font-size: 1rem; line-height: 1.4; } .ds-measurement-line { height: 20px; display: flex; align-items: start; justify-content: space-between; margin: 1.4rem 0; border-top: 2px solid var(--rule, #c9c3b5); } .ds-measurement-line span { width: 1px; height: 7px; background: var(--rule, #c9c3b5); } .ds-measurement-line span:nth-child(4n + 1) { height: 12px; } .ds-practice-actions { display: grid; gap: 0.8rem; } .ds-listen-button { min-height: 56px; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; padding: 0.7rem 1rem; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--paper-light, #fffdf7); color: var(--cobalt-dark, #102454); font: inherit; font-size: 1.04rem; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-listen-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; }"
     },
@@ -358,21 +362,30 @@
       "name": "Feedback Panel",
       "kind": "custom",
       "refersTo": "feedback-panel",
-      "description": "An icon-and-copy result panel; semantic classes swap the complete color treatment.",
+      "description": "An icon-and-copy result panel; semantic classes swap the complete color treatment without revealing a retry answer.",
       "html": "<div class=\"ds-feedback ds-feedback--correct\" role=\"status\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m20 6-11 11-5-5\"/></svg><div><strong>Spelling correct</strong><p>That sounded right.</p></div></div>",
       "css": ".ds-feedback { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.9rem; border: 2px solid var(--cobalt, #1747d1); border-radius: 0; background: var(--cobalt-light, #dce6ff); color: var(--cobalt-dark, #102454); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-feedback p { margin: 0.2rem 0 0; } .ds-feedback--correct { border-color: var(--green, #197353); background: var(--green-light, #dcefe7); color: #105d43; } .ds-feedback--minor-typo { border-color: #b68b00; background: #fff4bf; color: #694f00; } .ds-feedback--incorrect { border-color: var(--coral, #e54b2b); background: var(--red-light, #f8dfda); color: #8c2d1d; }"
+    },
+    {
+      "name": "Performance Summary",
+      "kind": "custom",
+      "refersTo": "performance-summary",
+      "description": "A square results tray whose green bar and percentage count first-try words only, with retried and skipped counts kept separate.",
+      "html": "<section class=\"ds-performance\"><div class=\"ds-performance__heading\"><div><h2>First-try performance</h2><p>1 of 3 words completed without a retry or skip</p></div><strong>33%</strong></div><div class=\"ds-performance__track\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"33\"><span></span></div><div class=\"ds-performance__key\"><span><b>1</b> First try</span><span><b>1</b> Retried</span><span><b>1</b> Skipped</span></div></section>",
+      "css": ".ds-performance { padding: 1rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 0; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); box-shadow: 5px 9px 22px rgba(16, 36, 84, 0.15); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-performance__heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; } .ds-performance__heading h2, .ds-performance__heading p { margin: 0; } .ds-performance__heading h2 { color: var(--cobalt-dark, #102454); font-size: 1.45rem; line-height: 1.08; font-variation-settings: 'wght' 720; } .ds-performance__heading p { margin-top: 0.35rem; color: var(--muted, #626a78); } .ds-performance__heading > strong { color: var(--green, #197353); font-size: clamp(2.2rem, 12vw, 3.4rem); line-height: 0.9; letter-spacing: -0.04em; font-variation-settings: 'wght' 780; } .ds-performance__track { height: 16px; margin-top: 1rem; overflow: hidden; border: 2px solid var(--cobalt-dark, #102454); background: var(--paper, #f4f0e7); } .ds-performance__track span { width: 33%; height: 100%; display: block; background: var(--green, #197353); } .ds-performance__key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem; margin-top: 0.8rem; color: var(--muted, #626a78); }"
     }
   ],
   "narrative": {
     "northStar": "Language Specimen Cabinet",
-    "overview": "Vocabulary Voice Tutor realizes the Creative North Star as a working language specimen cabinet: a warm paper field is ruled at 48px intervals, cobalt frames the application, and word lists become thick-bordered drawers with coral index tabs, measurement ticks, and numbered entries. The shipped PWA icon repeats the same cabinet silhouette in cobalt, yellow, ink navy, and coral, so the world survives from home screen to practice flow.\n\nThe system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; audio-only practice cues, compact index labels, post-check answer ledgers, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.\n\nMobile-first safe areas, 44-76px controls, visible coral focus rings, and a reduced-motion override are part of the visual identity, not add-ons. Color marks action and state but never carries correctness alone; every feedback panel includes an icon and explicit copy.",
+    "overview": "Vocabulary Voice Tutor realizes the Creative North Star as a working language specimen cabinet: a warm paper field is ruled at 48px intervals, cobalt frames the application, and word lists become thick-bordered drawers with coral index tabs, measurement ticks, and numbered entries. The shipped PWA icon repeats the same cabinet silhouette in cobalt, yellow, ink navy, and coral, so the world survives from home screen to practice flow.\n\nThe system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; audio-only practice cues, compact index labels, post-check answer ledgers, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Speaking and writing repeat until exactly correct or skipped, while the final green performance bar counts first-try words only and the word ledger preserves retry and skip evidence. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.\n\nMobile-first safe areas, 44-76px controls, visible coral focus rings, and a reduced-motion override are part of the visual identity, not add-ons. Color marks action and state but never carries correctness alone; every feedback panel includes an icon and explicit copy.",
     "keyCharacteristics": [
       "Warm paper stock with a faint 48px vertical ruling.",
       "Cobalt cabinet framing with ink-navy structure and coral index tabs.",
       "One hyperlegible variable sans across display, reading, labels, and controls.",
       "Square specimen trays paired with gently rounded interactive controls.",
       "Measurement ticks, numbered rows, ledgers, and stamps used as functional cabinet details.",
-      "Calm, explicit feedback without points, streaks, or celebratory game chrome."
+      "Calm, explicit feedback without points, streaks, or celebratory game chrome.",
+      "First-try performance stays separate from retried and skipped Needs practice evidence."
     ],
     "rules": [
       {
@@ -382,7 +395,7 @@
       },
       {
         "name": "The Feedback Has a Job Rule",
-        "body": "Coral marks focus, failure, or a physical index tab; yellow marks attention; green marks correctness. These hues are never free decoration, and state always includes an icon plus words.",
+        "body": "Coral marks focus, failure, or a physical index tab; yellow marks attention and the shared Needs practice state for retries or skips; green marks exact correctness and first-try performance. These hues are never free decoration, and state always includes an icon plus words.",
         "section": "colors"
       },
       {
@@ -412,6 +425,7 @@
       "Do keep touch targets at the shipped 44-76px minimum heights and preserve iPhone safe-area padding.",
       "Do use coral tabs, ruler ticks, row numbers, ledgers, and stamps only when they identify or measure real content.",
       "Do pair every correctness, warning, and error color with an icon and explicit calm copy.",
+      "Do count only first-try words in the performance percentage and preserve retry/skip evidence in the word ledger.",
       "Do preserve the 640px expansion and 520px compact behaviors when adding screens.",
       "Do honor prefers-reduced-motion by collapsing animation and transition durations to 0.01ms."
     ],
