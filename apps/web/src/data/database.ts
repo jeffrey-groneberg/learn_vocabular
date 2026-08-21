@@ -1,5 +1,11 @@
-import type { AttemptSummary, ExerciseSet } from '@vocabulary/domain'
+import type { AttemptSummary, ExerciseSet, SupportedLocale } from '@vocabulary/domain'
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+
+interface CachedSpeechAudio {
+  key: string
+  audio: Blob
+  lastAccessedAt: number
+}
 
 interface VocabularyDatabase extends DBSchema {
   exercises: {
@@ -22,25 +28,100 @@ interface VocabularyDatabase extends DBSchema {
       value: string
     }
   }
+  speechAudio: {
+    key: string
+    value: CachedSpeechAudio
+    indexes: { 'by-last-accessed': number }
+  }
 }
+
+export const speechAudioCacheEntryLimit = 256
 
 let databasePromise: Promise<IDBPDatabase<VocabularyDatabase>> | undefined
 
 export function getDatabase(): Promise<IDBPDatabase<VocabularyDatabase>> {
-  databasePromise ??= openDB<VocabularyDatabase>('vocabulary-voice-tutor', 1, {
-    upgrade(database) {
-      const exercises = database.createObjectStore('exercises', { keyPath: 'id' })
-      exercises.createIndex('by-updated', 'updatedAt')
+  databasePromise ??= openDB<VocabularyDatabase>('vocabulary-voice-tutor', 2, {
+    upgrade(database, oldVersion) {
+      if (oldVersion < 1) {
+        const exercises = database.createObjectStore('exercises', { keyPath: 'id' })
+        exercises.createIndex('by-updated', 'updatedAt')
 
-      const attempts = database.createObjectStore('attempts', { keyPath: 'id' })
-      attempts.createIndex('by-exercise', 'exerciseId')
-      attempts.createIndex('by-attempted', 'attemptedAt')
+        const attempts = database.createObjectStore('attempts', { keyPath: 'id' })
+        attempts.createIndex('by-exercise', 'exerciseId')
+        attempts.createIndex('by-attempted', 'attemptedAt')
 
-      database.createObjectStore('preferences', { keyPath: 'key' })
+        database.createObjectStore('preferences', { keyPath: 'key' })
+      }
+
+      if (oldVersion < 2) {
+        const speechAudio = database.createObjectStore('speechAudio', { keyPath: 'key' })
+        speechAudio.createIndex('by-last-accessed', 'lastAccessedAt')
+      }
     },
   })
 
   return databasePromise
+}
+
+// Bump this when the server-side voice, speaking rate, or audio format changes.
+const speechSynthesisRevision = 'v1'
+
+function speechAudioKey(text: string, locale: SupportedLocale): string {
+  return JSON.stringify([speechSynthesisRevision, locale, text.normalize('NFC')])
+}
+
+export async function getCachedSpeechAudio(
+  text: string,
+  locale: SupportedLocale,
+): Promise<Blob | undefined> {
+  const database = await getDatabase()
+  const transaction = database.transaction('speechAudio', 'readwrite')
+  const store = transaction.objectStore('speechAudio')
+  const key = speechAudioKey(text, locale)
+  const cached = await store.get(key)
+
+  if (!cached) {
+    await transaction.done
+    return undefined
+  }
+
+  if (cached.audio.size === 0 || !cached.audio.type.startsWith('audio/')) {
+    await store.delete(key)
+    await transaction.done
+    return undefined
+  }
+
+  await store.put({ ...cached, lastAccessedAt: Date.now() })
+  await transaction.done
+  return cached.audio
+}
+
+export async function saveCachedSpeechAudio(
+  text: string,
+  locale: SupportedLocale,
+  audio: Blob,
+): Promise<void> {
+  if (audio.size === 0 || !audio.type.startsWith('audio/')) {
+    throw new TypeError('Cached speech must be a non-empty audio blob')
+  }
+
+  const database = await getDatabase()
+  const transaction = database.transaction('speechAudio', 'readwrite')
+  const store = transaction.objectStore('speechAudio')
+  const key = speechAudioKey(text, locale)
+  await store.put({ key, audio, lastAccessedAt: Date.now() })
+
+  let entriesToRemove = (await store.count()) - speechAudioCacheEntryLimit
+  let cursor = await store.index('by-last-accessed').openCursor()
+  while (cursor && entriesToRemove > 0) {
+    if (cursor.primaryKey !== key) {
+      await cursor.delete()
+      entriesToRemove -= 1
+    }
+    cursor = await cursor.continue()
+  }
+
+  await transaction.done
 }
 
 export async function listExercises(): Promise<ExerciseSet[]> {

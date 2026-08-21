@@ -1,9 +1,10 @@
 # Vocabulary Voice Tutor
 
 A private, mobile-first English and German vocabulary tutor for one learner.
-Word lists and progress stay in IndexedDB on the iPhone. Azure AI Speech plays
-an audio-only cue and checks a short, deliberate English pronunciation attempt;
-recorded audio is kept only in memory for that request and is then discarded.
+Word lists, progress, and a bounded generated-cue cache stay in IndexedDB on the
+iPhone. Azure AI Speech plays an audio-only cue and checks a short, deliberate
+English pronunciation attempt; recorded microphone audio is kept only in memory
+for that request and is then discarded.
 
 ## What the learner can do
 
@@ -11,7 +12,8 @@ recorded audio is kept only in memory for that request and is then discarded.
 - Practise English → German, German → English, or a mix.
 - Begin every word with a replayable audio cue while both written words stay
   hidden.
-- Record the English word for pronunciation feedback in every direction.
+- Record the English word for pronunciation feedback in every direction. Every
+  aggregate, word, and individual-sound check must reach `80/100`.
 - In English → German, write the German translation and the English word. In
   German → English, write the English word.
 - Check spelling locally. Exact spelling passes; one edit is shown as a minor
@@ -212,13 +214,13 @@ destroy, secret rotation, firewall recovery, and rollback details.
 3. Open Vocabulary Tutor from the new icon.
 4. Allow microphone access only when prompted for a speaking attempt.
 
-Exercise content, typed answers, and aggregate practice results stay in the
-iPhone's IndexedDB. Audio and generated replay blobs are never put in IndexedDB
-or Cache Storage. The gateway and API disable request-body logging. Telemetry is
-limited to route, locale, mode, duration, retry/outcome category, release, and
-anonymous per-launch identifiers; it excludes words, translations, transcripts,
-typed answers, scores, audio, codes, cookies, tokens, addresses, and rate-limit
-keys.
+Exercise content, typed answers, aggregate practice results, and up to 256
+generated replay blobs stay in the iPhone's IndexedDB. The oldest generated
+audio is removed as the cache fills. Microphone recordings are never persisted.
+The gateway and API disable request-body logging. Telemetry is limited to route,
+locale, mode, duration, retry/outcome category, release, and anonymous
+per-launch identifiers; it excludes words, translations, transcripts, typed
+answers, scores, audio, codes, cookies, tokens, addresses, and rate-limit keys.
 
 The family code intentionally has no minimum strength rule. Five failures from
 one normalized source within 15 minutes cause a fixed 30-minute block, but a

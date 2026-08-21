@@ -1009,6 +1009,55 @@ label {
   color: var(--muted);
 }
 
+.speech-feedback > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.speech-guidance {
+  max-width: 52ch;
+  margin: 0.35rem 0 0;
+  line-height: 1.4;
+}
+
+.speech-score-sheet {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--rule);
+}
+
+.speech-score-sheet > small {
+  margin: 0;
+  color: var(--cobalt-dark);
+  font-weight: 680;
+}
+
+.speech-score-list {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0;
+}
+
+.speech-score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 1rem;
+}
+
+.speech-score-row dt {
+  color: var(--cobalt-dark);
+}
+
+.speech-score-row dd {
+  margin: 0;
+  color: var(--cobalt-dark);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .result-minor-typo {
   color: #694f00;
   background: #fff4bf;

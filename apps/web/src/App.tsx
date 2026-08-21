@@ -12,6 +12,9 @@ import {
   type PracticeMode,
   type PracticePrompt,
   type PracticeWord,
+  type PronunciationCheck,
+  type PronunciationFeedback,
+  type PronunciationScores,
   type SkippedPracticeStep,
   type SpellingOutcome,
   type SpokenOutcome,
@@ -616,10 +619,109 @@ function makePrompts(exercise: ExerciseSet, direction: PracticeDirection): Pract
 const spokenMessages: Record<SpokenOutcome, string> = {
   correct: 'That sounded right.',
   'different-word': 'That sounded like a different English word. Listen again, then try once more.',
-  'pronunciation-retry': 'The English word was recognised. Try it again a little slower and clearer.',
+  'pronunciation-retry': 'That needs one more try.',
   'no-speech': 'No clear speech was heard. You can try again.',
   'low-confidence': 'The recording was not clear enough to judge. Try again in a quieter spot.',
   'service-unavailable': 'Speaking feedback is unavailable right now. Try again in a moment.',
+}
+
+const pronunciationCheckLabels: Record<PronunciationCheck, string> = {
+  overall: 'Overall pronunciation',
+  accuracy: 'Sound accuracy',
+  fluency: 'Smooth speaking',
+  completeness: 'Whole word',
+  minimumWord: 'Word to practise',
+  minimumPhoneme: 'Sound to practise',
+}
+
+const soundPositionLabels = {
+  start: 'first',
+  middle: 'middle',
+  end: 'last',
+} as const
+
+function feedbackHint(feedback: PronunciationFeedback): string {
+  if (feedback.errors.includes('omission')) {
+    return 'A sound or word was left out. Say the whole answer from beginning to end.'
+  }
+  if (feedback.errors.includes('insertion')) {
+    return 'An extra sound or word was heard. Listen again, then copy only the answer.'
+  }
+  if (
+    feedback.failedChecks.includes('minimumPhoneme') ||
+    feedback.errors.includes('mispronunciation')
+  ) {
+    const location = feedback.weakestSoundPosition
+      ? `The ${soundPositionLabels[feedback.weakestSoundPosition]} sound`
+      : 'One sound'
+    return `${location} needs another try. Listen again and copy that part carefully.`
+  }
+  if (feedback.failedChecks.includes('completeness')) {
+    return 'Say the whole answer from beginning to end.'
+  }
+  if (
+    feedback.failedChecks.includes('fluency') ||
+    feedback.errors.includes('unexpected-break') ||
+    feedback.errors.includes('missing-break')
+  ) {
+    return 'Say it smoothly, without a long pause in the middle.'
+  }
+  if (feedback.errors.includes('monotone')) {
+    return 'Copy the rise and fall of the example more closely.'
+  }
+  if (
+    feedback.failedChecks.includes('accuracy') ||
+    feedback.failedChecks.includes('minimumWord')
+  ) {
+    return 'Listen again and match each sound more closely.'
+  }
+  return 'Listen again, then say the answer a little more clearly.'
+}
+
+function checkScore(scores: PronunciationScores, check: PronunciationCheck): number {
+  return scores[check]
+}
+
+function PronunciationDetails({
+  outcome,
+  feedback,
+  mode,
+}: {
+  outcome: SpokenOutcome
+  feedback: PronunciationFeedback | null
+  mode: PracticeMode
+}) {
+  if (!feedback) {
+    return null
+  }
+  const scores = feedback.scores
+  if (outcome === 'correct') {
+    return scores && mode === 'learn' ? (
+      <small>English pronunciation: {Math.round(scores.overall)} / 100</small>
+    ) : null
+  }
+  if (outcome !== 'pronunciation-retry') {
+    return null
+  }
+
+  return (
+    <>
+      <p className="speech-guidance">{feedbackHint(feedback)}</p>
+      {scores && feedback.failedChecks.length > 0 && mode === 'learn' ? (
+        <div className="speech-score-sheet">
+          <small>Each check needs 80 / 100.</small>
+          <dl className="speech-score-list">
+            {feedback.failedChecks.map((check) => (
+              <div className="speech-score-row" key={check}>
+                <dt>{pronunciationCheckLabels[check]}</dt>
+                <dd>{Math.round(checkScore(scores, check))} / 100</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ) : null}
+    </>
+  )
 }
 
 const languageNames: Record<VocabularyLanguage, string> = {
@@ -688,7 +790,7 @@ function PracticeScreen({
   const prompts = useMemo(() => makePrompts(exercise, direction), [exercise, direction])
   const [state, dispatch] = useReducer(practiceReducer, initialPracticeState(prompts.length, mode))
   const [spokenOutcome, setSpokenOutcome] = useState<SpokenOutcome | null>(null)
-  const [spokenScore, setSpokenScore] = useState<number | null>(null)
+  const [spokenFeedback, setSpokenFeedback] = useState<PronunciationFeedback | null>(null)
   const [spelling, setSpelling] = useState(emptySpellingAnswers)
   const [spellingOutcomes, setSpellingOutcomes] = useState<
     Partial<Record<VocabularyLanguage, SpellingOutcome>>
@@ -780,7 +882,14 @@ function PracticeScreen({
         mode,
       )
       setSpokenOutcome(result.outcome)
-      setSpokenScore(result.pronunciationScore)
+      setSpokenFeedback({
+        scores: result.scores,
+        failedChecks: result.failedChecks,
+        errors: result.errors,
+        ...(result.weakestSoundPosition
+          ? { weakestSoundPosition: result.weakestSoundPosition }
+          : {}),
+      })
       const passed = result.outcome === 'correct'
       if (!passed) {
         setRetryCount((current) => current + 1)
@@ -904,7 +1013,7 @@ function PracticeScreen({
 
   function next() {
     setSpokenOutcome(null)
-    setSpokenScore(null)
+    setSpokenFeedback(null)
     setSpelling(emptySpellingAnswers())
     setSpellingOutcomes({})
     setHasCheckedSpelling(false)
@@ -1033,7 +1142,11 @@ function PracticeScreen({
               <RotateCcw size={21} aria-hidden="true" />
               <div>
                 <strong>{spokenMessages[spokenOutcome]}</strong>
-                {spokenScore !== null && mode === 'learn' ? <small>English pronunciation: {Math.round(spokenScore)} / 100</small> : null}
+                <PronunciationDetails
+                  outcome={spokenOutcome}
+                  feedback={spokenFeedback}
+                  mode={mode}
+                />
               </div>
             </div>
             <div className="practice-actions ready-to-speak">
@@ -1060,7 +1173,11 @@ function PracticeScreen({
               {spokenOutcome === 'correct' ? <Check size={21} aria-hidden="true" /> : <CircleAlert size={21} aria-hidden="true" />}
               <div>
                 <strong>{spokenMessages[spokenOutcome]}</strong>
-                {spokenScore !== null && mode === 'learn' ? <small>English pronunciation: {Math.round(spokenScore)} / 100</small> : null}
+                <PronunciationDetails
+                  outcome={spokenOutcome}
+                  feedback={spokenFeedback}
+                  mode={mode}
+                />
               </div>
             </div>
             <form onSubmit={submitSpelling}>

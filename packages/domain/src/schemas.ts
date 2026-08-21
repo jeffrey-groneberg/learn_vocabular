@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import {
+  pronunciationChecks,
+  pronunciationErrors,
+  pronunciationSoundPositions,
+} from './types.js'
 
 export const localeSchema = z.enum(['en-GB', 'de-DE'])
 export const practiceModeSchema = z.enum(['learn', 'test'])
@@ -28,6 +33,17 @@ export const pronunciationMetadataSchema = z.strictObject({
   mode: practiceModeSchema,
 })
 
+const pronunciationScoreSchema = z.number().min(0).max(100)
+
+export const pronunciationScoresSchema = z.strictObject({
+  overall: pronunciationScoreSchema,
+  accuracy: pronunciationScoreSchema,
+  fluency: pronunciationScoreSchema,
+  completeness: pronunciationScoreSchema,
+  minimumWord: pronunciationScoreSchema,
+  minimumPhoneme: pronunciationScoreSchema,
+})
+
 export const pronunciationResponseSchema = z.strictObject({
   outcome: z.enum([
     'correct',
@@ -37,7 +53,11 @@ export const pronunciationResponseSchema = z.strictObject({
     'low-confidence',
     'service-unavailable',
   ]),
-  pronunciationScore: z.number().min(0).max(100).nullable(),
+  pronunciationScore: pronunciationScoreSchema.nullable(),
+  scores: pronunciationScoresSchema.nullable(),
+  failedChecks: z.array(z.enum(pronunciationChecks)),
+  errors: z.array(z.enum(pronunciationErrors)),
+  weakestSoundPosition: z.enum(pronunciationSoundPositions).optional(),
   recognizedText: z.string().max(120).optional(),
 })
 

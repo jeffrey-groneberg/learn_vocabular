@@ -7,8 +7,10 @@ import {
   initialPracticeState,
   normalizeAnswer,
   practiceReducer,
+  pronunciationChecks,
   summarizePracticePerformance,
   type AttemptSummary,
+  type PronunciationEvidence,
 } from './index.js'
 
 describe('answer normalization', () => {
@@ -31,13 +33,49 @@ describe('spelling grading', () => {
 })
 
 describe('pronunciation decisions', () => {
-  it('requires both the expected word and a score of at least 80', () => {
-    expect(evaluatePronunciation('apple', 'apple', 'en-GB', 80).outcome).toBe('correct')
-    expect(evaluatePronunciation('  „Haus.“  ', 'haus', 'de-DE', 99).outcome).toBe('correct')
-    expect(evaluatePronunciation('apple', 'apple', 'en-GB', 79.99).outcome).toBe(
-      'pronunciation-retry',
+  const passingEvidence: PronunciationEvidence = {
+    scores: {
+      overall: 80,
+      accuracy: 80,
+      fluency: 80,
+      completeness: 80,
+      minimumWord: 80,
+      minimumPhoneme: 80,
+    },
+    errors: [],
+  }
+
+  it('requires the expected word and every pronunciation check to reach 80', () => {
+    expect(evaluatePronunciation('apple', 'apple', 'en-GB', passingEvidence).outcome).toBe(
+      'correct',
     )
-    expect(evaluatePronunciation('pear', 'apple', 'en-GB', 99).outcome).toBe(
+    expect(
+      evaluatePronunciation('  „Haus.“  ', 'haus', 'de-DE', passingEvidence).outcome,
+    ).toBe('correct')
+
+    for (const check of pronunciationChecks) {
+      const decision = evaluatePronunciation('apple', 'apple', 'en-GB', {
+        ...passingEvidence,
+        scores: { ...passingEvidence.scores, [check]: 79.99 },
+      })
+      expect(decision).toMatchObject({
+        outcome: 'pronunciation-retry',
+        failedChecks: [check],
+      })
+    }
+  })
+
+  it('fails service-reported errors and still distinguishes a different word', () => {
+    expect(
+      evaluatePronunciation('apple', 'apple', 'en-GB', {
+        ...passingEvidence,
+        errors: ['insertion'],
+      }),
+    ).toMatchObject({
+      outcome: 'pronunciation-retry',
+      errors: ['insertion'],
+    })
+    expect(evaluatePronunciation('pear', 'apple', 'en-GB', passingEvidence).outcome).toBe(
       'different-word',
     )
   })

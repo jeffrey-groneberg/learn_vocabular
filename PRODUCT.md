@@ -46,8 +46,8 @@ evaluation while keeping the learner's library and progress on the iPhone.
   correct or the learner explicitly skips the word.
 - Results measure first-try performance only; retried and skipped words are
   both marked as needing practice and remain distinguishable word by word.
-- Learn mode reports the pronunciation score; Test mode withholds it until the
-  canonical pair is revealed.
+- Learn mode reports each pronunciation check below the threshold and gives one
+  focused retry hint. Test mode gives the hint but withholds numeric scores.
 - Speech operations require a network connection; editing and locally cached
   app-shell use remain available offline.
 - A family access code unlocks a fixed 30-day browser session.
@@ -57,13 +57,15 @@ evaluation while keeping the learner's library and progress on the iPhone.
 - British English (`en-GB`) and German (`de-DE`) neural text-to-speech for the
   direction-specific audio cue.
 - Scripted English (`en-GB`) Azure Speech Pronunciation Assessment with a strict
-  `80/100` pass threshold in every direction.
+  `80/100` threshold for overall pronunciation, accuracy, fluency,
+  completeness, every word, and every phoneme in every direction.
 - Exact spelling passes. Damerau-Levenshtein distance one receives specific
   minor-typo feedback but still requires another attempt; the canonical answer
   stays hidden until the word is correct or skipped.
-- Exercise sets, preferences, attempts, and progress stay in IndexedDB on the
-  learner's device.
-- Microphone audio and generated replay audio are transient and never persisted.
+- Exercise sets, preferences, attempts, progress, and a bounded generated-cue
+  cache stay in IndexedDB on the learner's device.
+- Microphone audio is transient and never persisted. Generated replay audio is
+  cached only on the learner's device and evicted least-recently-used.
 - No points, streaks, leaderboards, social comparison, cloud sync, or multiple
   learner profiles.
 - No learner account. The custom family code has no enforced strength rule.
@@ -93,7 +95,8 @@ evaluation while keeping the learner's library and progress on the iPhone.
 
 1. Make the next action obvious.
 2. Explain what to retry without exposing the answer too early.
-3. Keep learner content local and transient speech content out of storage.
+3. Keep learner content and generated cues local, and microphone audio out of
+   storage.
 4. Prefer deterministic correctness rules over unnecessary AI judgment.
 5. Respect a 9-13-year-old learner without gamification pressure.
 

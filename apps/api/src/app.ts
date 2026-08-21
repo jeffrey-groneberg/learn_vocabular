@@ -110,18 +110,27 @@ export async function buildApi(config: ApiConfig, speech: SpeechService) {
         return {
           outcome: 'no-speech',
           pronunciationScore: null,
+          scores: null,
+          failedChecks: [],
+          errors: [],
         }
       }
       const decision = evaluatePronunciation(
         result.recognizedText,
         parsed.data.reference,
         parsed.data.locale as SupportedLocale,
-        result.pronunciationScore,
+        result,
       )
       const mode = parsed.data.mode as PracticeMode
       return {
         outcome: decision.outcome,
-        pronunciationScore: result.pronunciationScore,
+        pronunciationScore: result.scores.overall,
+        scores: result.scores,
+        failedChecks: decision.failedChecks,
+        errors: decision.errors,
+        ...(result.weakestSoundPosition
+          ? { weakestSoundPosition: result.weakestSoundPosition }
+          : {}),
         ...(mode === 'learn' ? { recognizedText: result.recognizedText } : {}),
       }
     } catch {

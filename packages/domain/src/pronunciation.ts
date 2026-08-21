@@ -1,5 +1,12 @@
 import { answersMatch } from './normalization.js'
-import type { SpokenOutcome, SupportedLocale } from './types.js'
+import {
+  pronunciationChecks,
+  type PronunciationCheck,
+  type PronunciationError,
+  type PronunciationEvidence,
+  type SpokenOutcome,
+  type SupportedLocale,
+} from './types.js'
 
 export const pronunciationPassThreshold = 80
 const surroundingPunctuation = /^\p{P}+|\p{P}+$/gu
@@ -12,20 +19,26 @@ export interface PronunciationDecision {
   outcome: SpokenOutcome
   matchesReference: boolean
   passesPronunciation: boolean
+  failedChecks: PronunciationCheck[]
+  errors: PronunciationError[]
 }
 
 export function evaluatePronunciation(
   recognizedText: string,
   referenceText: string,
   locale: SupportedLocale,
-  pronunciationScore: number,
+  evidence: PronunciationEvidence,
 ): PronunciationDecision {
   const matchesReference = answersMatch(
     withoutDisplayPunctuation(recognizedText),
     withoutDisplayPunctuation(referenceText),
     locale,
   )
-  const passesPronunciation = pronunciationScore >= pronunciationPassThreshold
+  const failedChecks = pronunciationChecks.filter(
+    (check) => evidence.scores[check] < pronunciationPassThreshold,
+  )
+  const errors = [...new Set(evidence.errors)]
+  const passesPronunciation = failedChecks.length === 0 && errors.length === 0
 
   return {
     outcome: !matchesReference
@@ -35,5 +48,7 @@ export function evaluatePronunciation(
         : 'pronunciation-retry',
     matchesReference,
     passesPronunciation,
+    failedChecks,
+    errors,
   }
 }

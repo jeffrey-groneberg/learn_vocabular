@@ -3,11 +3,14 @@ import type { ExerciseSet } from '@vocabulary/domain'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   deleteExercise,
+  getCachedSpeechAudio,
   getDatabase,
   listExercises,
   resetDatabaseForTests,
   saveAttempt,
+  saveCachedSpeechAudio,
   saveExercise,
+  speechAudioCacheEntryLimit,
 } from './database.js'
 
 afterEach(async () => {
@@ -49,5 +52,30 @@ describe('local vocabulary database', () => {
     await deleteExercise(exercise.id)
     expect(await listExercises()).toEqual([])
     expect(await (await getDatabase()).getAll('attempts')).toEqual([])
+  })
+
+  it('caches generated speech by normalized text and locale', async () => {
+    const audio = new Blob(['generated-audio'], { type: 'audio/mpeg' })
+    await saveCachedSpeechAudio('Cafe\u0301', 'de-DE', audio)
+
+    const cached = await getCachedSpeechAudio('Café', 'de-DE')
+    expect(await cached?.text()).toBe('generated-audio')
+    expect(await getCachedSpeechAudio('Café', 'en-GB')).toBeUndefined()
+  })
+
+  it('bounds the generated speech cache', async () => {
+    for (let index = 0; index <= speechAudioCacheEntryLimit; index += 1) {
+      await saveCachedSpeechAudio(
+        `word-${index}`,
+        'en-GB',
+        new Blob([String(index)], { type: 'audio/mpeg' }),
+      )
+    }
+
+    const database = await getDatabase()
+    expect(await database.count('speechAudio')).toBe(speechAudioCacheEntryLimit)
+    expect(
+      await (await getCachedSpeechAudio(`word-${speechAudioCacheEntryLimit}`, 'en-GB'))?.text(),
+    ).toBe(String(speechAudioCacheEntryLimit))
   })
 })

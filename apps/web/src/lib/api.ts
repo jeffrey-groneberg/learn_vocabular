@@ -3,6 +3,10 @@ import {
   type PracticeMode,
   type SupportedLocale,
 } from '@vocabulary/domain'
+import {
+  getCachedSpeechAudio,
+  saveCachedSpeechAudio,
+} from '../data/database.js'
 
 interface ApiFailureBody {
   error?: string
@@ -72,6 +76,18 @@ export async function logout(): Promise<void> {
 }
 
 export async function requestSpeech(text: string, locale: SupportedLocale): Promise<Blob> {
+  try {
+    const cached = await getCachedSpeechAudio(text, locale)
+    if (cached) {
+      return cached
+    }
+  } catch (error) {
+    if (!(error instanceof DOMException)) {
+      throw error
+    }
+    console.warn('tts-cache-read-failed', error.name)
+  }
+
   const response = await fetch('/api/tts', {
     method: 'POST',
     credentials: 'same-origin',
@@ -81,7 +97,16 @@ export async function requestSpeech(text: string, locale: SupportedLocale): Prom
   if (!response.ok) {
     await throwApiError(response)
   }
-  return response.blob()
+  const audio = await response.blob()
+  try {
+    await saveCachedSpeechAudio(text, locale, audio)
+  } catch (error) {
+    if (!(error instanceof DOMException)) {
+      throw error
+    }
+    console.warn('tts-cache-write-failed', error.name)
+  }
+  return audio
 }
 
 function encodeHeaderText(value: string): string {

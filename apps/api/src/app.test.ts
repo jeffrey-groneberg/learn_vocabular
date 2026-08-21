@@ -14,7 +14,18 @@ const speech: SpeechService = {
     return Buffer.from('audio')
   },
   async assess() {
-    return { recognizedText: 'Apfel.', pronunciationScore: 84 }
+    return {
+      recognizedText: 'Apfel.',
+      scores: {
+        overall: 84,
+        accuracy: 86,
+        fluency: 88,
+        completeness: 100,
+        minimumWord: 85,
+        minimumPhoneme: 81,
+      },
+      errors: [],
+    }
   },
 }
 
@@ -77,6 +88,58 @@ describe('internal Speech API', () => {
     expect(response.json()).toEqual({
       outcome: 'correct',
       pronunciationScore: 84,
+      scores: {
+        overall: 84,
+        accuracy: 86,
+        fluency: 88,
+        completeness: 100,
+        minimumWord: 85,
+        minimumPhoneme: 81,
+      },
+      failedChecks: [],
+      errors: [],
+    })
+  })
+
+  it('fails when one phoneme is below 80 and returns targeted feedback', async () => {
+    const app = await buildApi(config, {
+      ...speech,
+      async assess() {
+        return {
+          recognizedText: 'apple',
+          scores: {
+            overall: 90,
+            accuracy: 90,
+            fluency: 90,
+            completeness: 100,
+            minimumWord: 88,
+            minimumPhoneme: 72,
+          },
+          errors: [],
+          weakestSoundPosition: 'end',
+        }
+      },
+    })
+    apps.push(app)
+    const response = await app.inject({
+      method: 'POST',
+      url: '/pronunciation',
+      headers: {
+        'content-type': 'audio/wav',
+        'x-internal-gateway-key': config.internalApiCredential,
+        'x-vocabulary-reference': referenceHeader('apple'),
+        'x-vocabulary-locale': 'en-GB',
+        'x-vocabulary-mode': 'learn',
+      },
+      payload: wav(),
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      outcome: 'pronunciation-retry',
+      pronunciationScore: 90,
+      failedChecks: ['minimumPhoneme'],
+      weakestSoundPosition: 'end',
     })
   })
 

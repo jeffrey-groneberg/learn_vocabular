@@ -44,6 +44,51 @@ export type SpokenOutcome =
   | 'low-confidence'
   | 'service-unavailable'
 
+export const pronunciationChecks = [
+  'overall',
+  'accuracy',
+  'fluency',
+  'completeness',
+  'minimumWord',
+  'minimumPhoneme',
+] as const
+export type PronunciationCheck = (typeof pronunciationChecks)[number]
+
+export const pronunciationErrors = [
+  'omission',
+  'insertion',
+  'mispronunciation',
+  'unexpected-break',
+  'missing-break',
+  'monotone',
+] as const
+export type PronunciationError = (typeof pronunciationErrors)[number]
+
+export const pronunciationSoundPositions = ['start', 'middle', 'end'] as const
+export type PronunciationSoundPosition = (typeof pronunciationSoundPositions)[number]
+
+export interface PronunciationScores {
+  overall: number
+  accuracy: number
+  fluency: number
+  completeness: number
+  minimumWord: number
+  minimumPhoneme: number
+}
+
+export interface PronunciationEvidence {
+  scores: PronunciationScores
+  errors: PronunciationError[]
+  weakestSoundPosition?: PronunciationSoundPosition
+}
+
+export interface PronunciationFeedback {
+  scores: PronunciationScores | null
+  failedChecks: PronunciationCheck[]
+  errors: PronunciationError[]
+  weakestSoundPosition?: PronunciationSoundPosition
+}
+
 export type SpellingOutcome = 'correct' | 'minor-typo' | 'incorrect'
 export type AttemptCompletion = 'first-try' | 'retried' | 'skipped'
 export type SkippedPracticeStep = 'speaking' | 'spelling'
