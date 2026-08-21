@@ -14,7 +14,9 @@ ARG VITE_APPLICATIONINSIGHTS_CONNECTION_STRING
 ARG VITE_RELEASE
 ENV VITE_APPLICATIONINSIGHTS_CONNECTION_STRING=$VITE_APPLICATIONINSIGHTS_CONNECTION_STRING
 ENV VITE_RELEASE=$VITE_RELEASE
-RUN npm run build --workspace @vocabulary/web \
+RUN npm run build --workspace @vocabulary/domain \
+  && npm run build --workspace @vocabulary/observability \
+  && npm run build --workspace @vocabulary/web \
   && npm prune --omit=dev --workspaces --include-workspace-root
 
 FROM node:24.14.0-alpine3.23 AS runtime

@@ -10,7 +10,9 @@ RUN npm ci --no-audit --no-fund
 
 COPY apps/api apps/api
 COPY packages packages
-RUN npm run build --workspace @vocabulary/api \
+RUN npm run build --workspace @vocabulary/domain \
+  && npm run build --workspace @vocabulary/observability \
+  && npm run build --workspace @vocabulary/api \
   && npm prune --omit=dev --workspaces --include-workspace-root
 
 FROM node:24.14.0-alpine3.23 AS runtime
