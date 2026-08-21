@@ -4,6 +4,20 @@
 .DS_Store
 *.log
 
+.env
+.env.*
+!.env.example
+!.env.*.example
+.azure
+**/.azure
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+credentials.json
+service-account*.json
+
 node_modules
 **/node_modules
 coverage
