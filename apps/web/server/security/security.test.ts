@@ -49,6 +49,8 @@ describe('gateway lockout', () => {
       internalApiCredential: 'gateway-api-key-at-least-32-bytes',
       internalApiUrl: 'http://127.0.0.1:9',
       storageTableName: 'ratelimits',
+      sessionCookieName: 'vocabulary-voice-tutor-local',
+      sessionCookieSecure: false,
       production: false,
       port: 0,
     }
@@ -81,5 +83,38 @@ describe('gateway lockout', () => {
     })
     expect(blocked.statusCode).toBe(429)
     expect(blocked.headers['retry-after']).toBeDefined()
+  })
+
+  it('uses the cookie name and transport policy from configuration', async () => {
+    const config: GatewayConfig = {
+      accessCodeHash: await createAccessCodeHash('correct'),
+      cookieSigningKey: 'cookie-signing-key-at-least-32-bytes',
+      rateLimitPepper: 'rate-limit-pepper-at-least-32-bytes',
+      internalApiCredential: 'gateway-api-key-at-least-32-bytes',
+      internalApiUrl: 'http://127.0.0.1:9',
+      storageTableName: 'ratelimits',
+      sessionCookieName: 'vocabulary-voice-tutor-local',
+      sessionCookieSecure: false,
+      production: false,
+      port: 0,
+    }
+    const app = await buildGateway(config, new MemoryLockoutStore())
+    apps.push(app)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/session',
+      headers: {
+        'content-type': 'application/json',
+        'sec-fetch-site': 'same-origin',
+      },
+      payload: { code: 'correct' },
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(response.headers['set-cookie']).toContain(
+      'vocabulary-voice-tutor-local=',
+    )
+    expect(response.headers['set-cookie']).not.toContain('Secure')
   })
 })

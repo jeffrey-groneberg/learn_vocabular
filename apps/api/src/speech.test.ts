@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createPronunciationAssessmentConfig,
   createSpeechSsml,
+  isNoSpeechAssessment,
   parsePronunciationAssessmentJson,
 } from './speech.js'
 
@@ -26,6 +27,57 @@ describe('speech synthesis', () => {
 })
 
 describe('pronunciation assessment details', () => {
+  it('classifies an all-omission zero-score result as no speech', () => {
+    expect(
+      isNoSpeechAssessment({
+        recognizedText: '',
+        scores: {
+          overall: 0,
+          accuracy: 0,
+          fluency: 0,
+          completeness: 0,
+          prosody: null,
+          minimumWord: 0,
+          minimumPhoneme: null,
+        },
+        errors: ['omission'],
+        problemWords: [
+          {
+            word: 'Good',
+            index: 0,
+            accuracyScore: 0,
+            errors: ['omission'],
+          },
+          {
+            word: 'morning',
+            index: 1,
+            accuracyScore: 0,
+            errors: ['omission'],
+          },
+        ],
+      }),
+    ).toBe(true)
+  })
+
+  it('keeps a recognized different answer for normal feedback', () => {
+    expect(
+      isNoSpeechAssessment({
+        recognizedText: 'Hello there',
+        scores: {
+          overall: 0,
+          accuracy: 0,
+          fluency: 0,
+          completeness: 0,
+          prosody: null,
+          minimumWord: 0,
+          minimumPhoneme: null,
+        },
+        errors: ['omission', 'insertion'],
+        problemWords: [],
+      }),
+    ).toBe(false)
+  })
+
   it('extracts aggregate, word, and phoneme evidence', () => {
     const evidence = parsePronunciationAssessmentJson(
       JSON.stringify({
@@ -122,6 +174,94 @@ describe('pronunciation assessment details', () => {
     })
   })
 
+  it('does not create a problem word from an isolated phoneme outlier', () => {
+    const evidence = parsePronunciationAssessmentJson(
+      JSON.stringify({
+        NBest: [
+          {
+            PronunciationAssessment: {
+              AccuracyScore: 92,
+              FluencyScore: 90,
+              CompletenessScore: 100,
+              ProsodyScore: 91,
+              PronScore: 92,
+            },
+            Words: [
+              {
+                Word: 'good',
+                PronunciationAssessment: {
+                  AccuracyScore: 91,
+                  ErrorType: 'None',
+                },
+                Phonemes: [
+                  {
+                    Phoneme: 'ɡ',
+                    PronunciationAssessment: {
+                      AccuracyScore: 61,
+                      NBestPhonemes: [{ Phoneme: 'ɡ', Score: 100 }],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    )
+
+    expect(evidence.scores.minimumPhoneme).toBe(61)
+    expect(evidence.problemWords).toEqual([])
+  })
+
+  it('keeps a miscue word when Azure omits its accuracy score', () => {
+    const evidence = parsePronunciationAssessmentJson(
+      JSON.stringify({
+        NBest: [
+          {
+            PronunciationAssessment: {
+              AccuracyScore: 85,
+              FluencyScore: 90,
+              CompletenessScore: 80,
+              PronScore: 86,
+            },
+            Words: [
+              {
+                Word: 'good',
+                PronunciationAssessment: {
+                  AccuracyScore: 91,
+                  ErrorType: 'None',
+                },
+              },
+              {
+                Word: 'very',
+                PronunciationAssessment: {
+                  ErrorType: 'Insertion',
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    )
+
+    expect(evidence).toMatchObject({
+      scores: {
+        prosody: null,
+        minimumWord: 0,
+        minimumPhoneme: null,
+      },
+      errors: ['insertion'],
+      problemWords: [
+        {
+          word: 'very',
+          index: 1,
+          accuracyScore: 0,
+          errors: ['insertion'],
+        },
+      ],
+    })
+  })
+
   it('extracts sentence break confidence and utterance-level monotone feedback', () => {
     const evidence = parsePronunciationAssessmentJson(
       JSON.stringify({
@@ -180,7 +320,7 @@ describe('pronunciation assessment details', () => {
     ])
   })
 
-  it('rejects results that omit required word or phoneme evidence', () => {
+  it('rejects results that omit required word evidence', () => {
     expect(() =>
       parsePronunciationAssessmentJson(
         JSON.stringify({
@@ -197,6 +337,8 @@ describe('pronunciation assessment details', () => {
           ],
         }),
       ),
-    ).toThrow('Pronunciation assessment omitted required scoring details')
+    ).toThrow(
+      'Pronunciation assessment omitted required word scoring details',
+    )
   })
 })

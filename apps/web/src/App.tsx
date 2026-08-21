@@ -61,6 +61,11 @@ import {
   requestSpeech,
 } from './lib/api.js'
 import { PcmRecorder } from './lib/audio.js'
+import {
+  playPreparedSpeechBlob,
+  PreparedSpeechAudio,
+  speechAudioKey,
+} from './lib/prepared-speech.js'
 
 type View =
   | { name: 'library' }
@@ -642,7 +647,6 @@ const pronunciationCheckLabels: Record<PronunciationCheck, string> = {
   completeness: 'Complete answer',
   prosody: 'Rhythm and stress',
   minimumWord: 'Lowest word score',
-  minimumPhoneme: 'Lowest sound score',
 }
 
 const soundPositionLabels = {
@@ -650,6 +654,231 @@ const soundPositionLabels = {
   middle: 'middle',
   end: 'last',
 } as const
+
+interface SoundCoach {
+  label: string
+  example: string
+  tip: string
+}
+
+const soundCoaches: Record<string, SoundCoach> = {
+  p: {
+    label: 'the “p” sound',
+    example: 'pen',
+    tip: 'Close your lips, hold a little air, then pop them open. Keep your voice off.',
+  },
+  b: {
+    label: 'the “b” sound',
+    example: 'bed',
+    tip: 'Close your lips, then open them while your voice is buzzing.',
+  },
+  t: {
+    label: 'the “t” sound',
+    example: 'top',
+    tip: 'Touch just behind your top teeth with your tongue, then release the air.',
+  },
+  d: {
+    label: 'the “d” sound',
+    example: 'dog',
+    tip: 'Touch just behind your top teeth with your tongue, then release it with your voice on.',
+  },
+  k: {
+    label: 'the “k” sound',
+    example: 'key',
+    tip: 'Lift the back of your tongue, briefly stop the air, then release it without your voice.',
+  },
+  g: {
+    label: 'the hard “g” sound',
+    example: 'go',
+    tip: 'Lift the back of your tongue, briefly stop the air, then release it with your voice on.',
+  },
+  f: {
+    label: 'the “f” sound',
+    example: 'fish',
+    tip: 'Rest your top teeth on your lower lip and blow air. Keep your voice off.',
+  },
+  v: {
+    label: 'the “v” sound',
+    example: 'very',
+    tip: 'Rest your top teeth on your lower lip and let your voice buzz.',
+  },
+  θ: {
+    label: 'the quiet “th” sound',
+    example: 'think',
+    tip: 'Put your tongue lightly between your teeth and blow air. Keep your voice off.',
+  },
+  ð: {
+    label: 'the buzzing “th” sound',
+    example: 'this',
+    tip: 'Put your tongue lightly between your teeth and turn your voice on.',
+  },
+  s: {
+    label: 'the “s” sound',
+    example: 'sun',
+    tip: 'Keep your tongue just behind your top teeth and blow a thin stream of air.',
+  },
+  z: {
+    label: 'the “z” sound',
+    example: 'zoo',
+    tip: 'Make the “s” shape, then turn your voice on so it buzzes.',
+  },
+  ʃ: {
+    label: 'the “sh” sound',
+    example: 'ship',
+    tip: 'Round your lips a little and blow air down the middle of your tongue.',
+  },
+  ʒ: {
+    label: 'the soft sound in “vision”',
+    example: 'vision',
+    tip: 'Make a gentle “sh” shape and turn your voice on.',
+  },
+  tʃ: {
+    label: 'the “ch” sound',
+    example: 'chair',
+    tip: 'Start with a quick “t”, then release it into “sh”.',
+  },
+  dʒ: {
+    label: 'the “j” sound',
+    example: 'jump',
+    tip: 'Start with a quick “d”, then release it with your voice on.',
+  },
+  h: {
+    label: 'the “h” sound',
+    example: 'hat',
+    tip: 'Breathe the sound out gently, as if warming your hands.',
+  },
+  m: {
+    label: 'the “m” sound',
+    example: 'moon',
+    tip: 'Close your lips and hum through your nose.',
+  },
+  n: {
+    label: 'the “n” sound',
+    example: 'nose',
+    tip: 'Touch behind your top teeth with your tongue and let your voice flow through your nose.',
+  },
+  ŋ: {
+    label: 'the “ng” sound',
+    example: 'sing',
+    tip: 'Lift the back of your tongue and let your voice flow through your nose.',
+  },
+  l: {
+    label: 'the “l” sound',
+    example: 'light',
+    tip: 'Touch just behind your top teeth with the tip of your tongue and use your voice.',
+  },
+  ɹ: {
+    label: 'the English “r” sound',
+    example: 'red',
+    tip: 'Lift your tongue without touching the roof of your mouth and round your lips a little.',
+  },
+  w: {
+    label: 'the “w” sound',
+    example: 'we',
+    tip: 'Round your lips tightly, then open them as you start the word.',
+  },
+  j: {
+    label: 'the “y” sound',
+    example: 'yes',
+    tip: 'Lift the middle of your tongue close to the roof of your mouth, then glide into the vowel.',
+  },
+  i: {
+    label: 'the long “ee” sound',
+    example: 'see',
+    tip: 'Smile slightly and keep your tongue high near the front of your mouth.',
+  },
+  ɪ: {
+    label: 'the short “i” sound',
+    example: 'sit',
+    tip: 'Relax your mouth and say a short, light vowel.',
+  },
+  eɪ: {
+    label: 'the long “a” sound',
+    example: 'day',
+    tip: 'Start with “eh” and glide gently toward “ee”.',
+  },
+  ɛ: {
+    label: 'the short “e” sound',
+    example: 'bed',
+    tip: 'Open your mouth a little and keep your tongue relaxed near the front.',
+  },
+  æ: {
+    label: 'the short “a” sound',
+    example: 'cat',
+    tip: 'Open your mouth wider and keep your tongue low near the front.',
+  },
+  ɑ: {
+    label: 'the open “ah” sound',
+    example: 'father',
+    tip: 'Open your mouth and keep your tongue low and relaxed.',
+  },
+  ɔ: {
+    label: 'the “aw” sound',
+    example: 'law',
+    tip: 'Round your lips a little and keep the sound open.',
+  },
+  oʊ: {
+    label: 'the long “o” sound',
+    example: 'go',
+    tip: 'Round your lips and let the sound glide gently toward “oo”.',
+  },
+  ʊ: {
+    label: 'the short “oo” sound',
+    example: 'book',
+    tip: 'Round your lips loosely and keep the sound short.',
+  },
+  u: {
+    label: 'the long “oo” sound',
+    example: 'moon',
+    tip: 'Round your lips and keep your tongue high near the back.',
+  },
+  ʌ: {
+    label: 'the short “u” sound',
+    example: 'cup',
+    tip: 'Keep your mouth relaxed and make a short sound from the middle.',
+  },
+  ə: {
+    label: 'the quick “uh” sound',
+    example: 'about',
+    tip: 'Relax your mouth and make this sound very short and light.',
+  },
+  ɝ: {
+    label: 'the “er” sound',
+    example: 'bird',
+    tip: 'Lift your tongue without touching the roof of your mouth and keep your voice on.',
+  },
+  ɚ: {
+    label: 'the soft “er” sound',
+    example: 'teacher',
+    tip: 'Keep the sound short, with your tongue lifted and your voice on.',
+  },
+  aɪ: {
+    label: 'the long “i” sound',
+    example: 'my',
+    tip: 'Start with an open mouth and glide toward a small smile.',
+  },
+  aʊ: {
+    label: 'the “ow” sound',
+    example: 'now',
+    tip: 'Start with an open mouth and glide toward rounded lips.',
+  },
+  ɔɪ: {
+    label: 'the “oy” sound',
+    example: 'boy',
+    tip: 'Start with rounded lips and glide toward a small smile.',
+  },
+}
+
+function soundCoach(phoneme: string): SoundCoach | undefined {
+  const normalized = phoneme
+    .normalize('NFC')
+    .replaceAll('ɡ', 'g')
+    .replaceAll('r', 'ɹ')
+    .replaceAll('t͡ʃ', 'tʃ')
+    .replaceAll('d͡ʒ', 'dʒ')
+    .replace(/[ˈˌː.]/gu, '')
+  return soundCoaches[normalized]
+}
 
 function feedbackHint(feedback: PronunciationFeedback): string {
   if (feedback.errors.includes('monotone')) {
@@ -660,8 +889,8 @@ function feedbackHint(feedback: PronunciationFeedback): string {
   }
   if (feedback.problemWords.length > 0) {
     return feedback.problemWords.length === 1
-      ? 'Fix the marked word, then say the complete answer again.'
-      : 'Fix each marked word, then say the complete answer again.'
+      ? 'Try the tip below, then say the complete answer again.'
+      : 'Try each tip below, then say the complete answer again.'
   }
   if (feedback.errors.includes('omission')) {
     return 'A sound or word was left out. Say the whole answer from beginning to end.'
@@ -669,11 +898,8 @@ function feedbackHint(feedback: PronunciationFeedback): string {
   if (feedback.errors.includes('insertion')) {
     return 'An extra sound or word was heard. Listen again, then copy only the answer.'
   }
-  if (
-    feedback.failedChecks.includes('minimumPhoneme') ||
-    feedback.errors.includes('mispronunciation')
-  ) {
-    return 'One or more sounds need another try. Listen again and copy them carefully.'
+  if (feedback.errors.includes('mispronunciation')) {
+    return 'Listen to the model, practise the marked word slowly, then try the full answer again.'
   }
   if (feedback.failedChecks.includes('completeness')) {
     return 'Say the whole answer from beginning to end.'
@@ -698,28 +924,39 @@ function problemWordMessages(problem: PronunciationWordFeedback): string[] {
   const messages: string[] = []
   for (const error of problem.errors) {
     if (error === 'omission') {
-      messages.push('This word was left out.')
+      messages.push('This word was missing. Add it when you say the full answer again.')
     } else if (error === 'insertion') {
-      messages.push('This extra word was heard. Leave it out on the next try.')
+      messages.push('This was an extra word. Leave it out on the next try.')
     } else if (error === 'unexpected-break') {
-      messages.push('There was an unexpected pause before this word. Join it smoothly to the sentence.')
+      messages.push('You paused before this word. Join it smoothly to the word before it.')
     } else if (error === 'missing-break') {
-      messages.push('Add a short pause before this word.')
+      messages.push('Take a tiny pause before this word.')
     } else if (error === 'mispronunciation' && !problem.weakestSound) {
-      messages.push('This word did not match the model pronunciation.')
+      messages.push('Listen for this word in the model answer, say it slowly once, then try the full answer.')
     }
   }
   const skippedOrInserted =
     problem.errors.includes('omission') || problem.errors.includes('insertion')
   if (problem.weakestSound && !skippedOrInserted) {
-    const location = problem.weakestSound.position
-      ? `${soundPositionLabels[problem.weakestSound.position]} `
-      : ''
-    messages.push(
-      problem.weakestSound.heard
-        ? `The ${location}/${problem.weakestSound.expected}/ sound was closer to /${problem.weakestSound.heard}/.`
-        : `The ${location}/${problem.weakestSound.expected}/ sound needs a clearer match.`,
-    )
+    const expected = soundCoach(problem.weakestSound.expected)
+    const heard = problem.weakestSound.heard
+      ? soundCoach(problem.weakestSound.heard)
+      : undefined
+    if (expected) {
+      messages.push(`Try ${expected.label}, like in “${expected.example}”.`)
+      if (heard) {
+        messages.push(`It sounded closer to ${heard.label}, like in “${heard.example}”. ${expected.tip}`)
+      } else {
+        messages.push(expected.tip)
+      }
+    } else {
+      const location = problem.weakestSound.position
+        ? `the ${soundPositionLabels[problem.weakestSound.position]} sound`
+        : 'this sound'
+      messages.push(
+        `Listen for ${location} in “${problem.word}”. Say the word slowly, then try the full answer.`,
+      )
+    }
   }
   if (messages.length === 0) {
     messages.push('This word needs a clearer pronunciation.')
@@ -727,7 +964,10 @@ function problemWordMessages(problem: PronunciationWordFeedback): string[] {
   return messages
 }
 
-function checkScore(scores: PronunciationScores, check: PronunciationCheck): number {
+function checkScore(
+  scores: PronunciationScores,
+  check: PronunciationCheck,
+): number | null {
   return scores[check]
 }
 
@@ -770,12 +1010,7 @@ function PronunciationDetails({
                   <p key={message}>{message}</p>
                 ))}
                 {mode === 'learn' ? (
-                  <small>
-                    Word {Math.round(problem.accuracyScore)} / 100
-                    {problem.weakestSound
-                      ? ` · Sound ${Math.round(problem.weakestSound.score)} / 100`
-                      : ''}
-                  </small>
+                  <small>Word match: {Math.round(problem.accuracyScore)} / 100</small>
                 ) : null}
               </li>
             ))}
@@ -789,7 +1024,11 @@ function PronunciationDetails({
             {feedback.failedChecks.map((check) => (
               <div className="speech-score-row" key={check}>
                 <dt>{pronunciationCheckLabels[check]}</dt>
-                <dd>{Math.round(checkScore(scores, check))} / 100</dd>
+                <dd>
+                  {checkScore(scores, check) === null
+                    ? 'Not available'
+                    : `${Math.round(checkScore(scores, check) ?? 0)} / 100`}
+                </dd>
               </div>
             ))}
           </dl>
@@ -804,8 +1043,20 @@ const languageNames: Record<VocabularyLanguage, string> = {
   german: 'German',
 }
 
+type SpeechAudioStatus = 'idle' | 'loading' | 'ready' | 'error'
+
 function emptySpellingAnswers(): Record<VocabularyLanguage, string> {
   return { english: '', german: '' }
+}
+
+function clientErrorDiagnostic(error: unknown): string {
+  if (error instanceof ApiError) {
+    return `api-${error.status}:${error.message}`
+  }
+  if (error instanceof Error) {
+    return error.name
+  }
+  return 'unknown'
 }
 
 function SpellingFeedback({
@@ -876,16 +1127,99 @@ function PracticeScreen({
   const [attempts, setAttempts] = useState<AttemptSummary[]>([])
   const [storageWarning, setStorageWarning] = useState<string | null>(null)
   const [playingPace, setPlayingPace] = useState<SpeechPace | null>(null)
+  const [preparingRecorder, setPreparingRecorder] = useState(false)
+  const [cueAudioError, setCueAudioError] = useState<string | null>(null)
   const [modelAudioError, setModelAudioError] = useState<string | null>(null)
+  const [cueAudioStatus, setCueAudioStatus] = useState<SpeechAudioStatus>('idle')
+  const [modelAudioStatus, setModelAudioStatus] = useState<
+    Record<SpeechPace, SpeechAudioStatus>
+  >({ normal: 'idle', slow: 'idle' })
   const recorder = useRef<PcmRecorder | null>(null)
   const stopTimer = useRef<number | null>(null)
   const completed = useRef(false)
   const attemptRecorded = useRef(false)
   const currentAttemptId = useRef<string | null>(null)
+  const [preparedSpeechAudio] = useState(
+    () => new PreparedSpeechAudio(requestSpeech),
+  )
   const prompt = prompts[state.itemIndex]!
   const cue = prompt.words[prompt.cueLanguage]
   const spokenAnswer = prompt.words[prompt.spokenLanguage]
+  const currentCueAudioKey = useRef('')
+  const currentModelAudioKeys = useRef<Record<SpeechPace, string>>({
+    normal: '',
+    slow: '',
+  })
+  currentCueAudioKey.current = speechAudioKey(cue, 'normal')
+  currentModelAudioKeys.current = {
+    normal: speechAudioKey(spokenAnswer, 'normal'),
+    slow: speechAudioKey(spokenAnswer, 'slow'),
+  }
   const playing = playingPace !== null
+  const canHearModel =
+    spokenOutcome === 'pronunciation-retry' || spokenOutcome === 'different-word'
+
+  const prepareWordAudio = useCallback(
+    (word: PracticeWord, pace: SpeechPace): Promise<Blob> =>
+      preparedSpeechAudio.prepare(word, pace),
+    [preparedSpeechAudio],
+  )
+
+  const prepareCueAudio = useCallback(async () => {
+    if (!online) {
+      setCueAudioStatus('idle')
+      return
+    }
+    const key = speechAudioKey(cue, 'normal')
+    setCueAudioError(null)
+    setCueAudioStatus('loading')
+    try {
+      await prepareWordAudio(cue, 'normal')
+      if (currentCueAudioKey.current === key) {
+        setCueAudioStatus('ready')
+      }
+    } catch (caught) {
+      console.error(
+        'pronunciation-check-failed',
+        clientErrorDiagnostic(caught),
+      )
+      if (caught instanceof ApiError && caught.status === 401) {
+        onSessionExpired()
+        return
+      }
+      setCueAudioStatus('error')
+      setCueAudioError(
+        'The cue could not be prepared. Check the connection, then load it again.',
+      )
+    }
+  }, [cue, online, onSessionExpired, prepareWordAudio])
+
+  const prepareModelAudio = useCallback(
+    async (pace: SpeechPace) => {
+      if (!online || !canHearModel) {
+        return
+      }
+      const key = speechAudioKey(spokenAnswer, pace)
+      setModelAudioError(null)
+      setModelAudioStatus((current) => ({ ...current, [pace]: 'loading' }))
+      try {
+        await prepareWordAudio(spokenAnswer, pace)
+        if (currentModelAudioKeys.current[pace] === key) {
+          setModelAudioStatus((current) => ({ ...current, [pace]: 'ready' }))
+        }
+      } catch (caught) {
+        if (caught instanceof ApiError && caught.status === 401) {
+          onSessionExpired()
+          return
+        }
+        setModelAudioStatus((current) => ({ ...current, [pace]: 'error' }))
+        setModelAudioError(
+          'The model audio could not be prepared. Check the connection, then load it again.',
+        )
+      }
+    },
+    [canHearModel, online, onSessionExpired, prepareWordAudio, spokenAnswer],
+  )
 
   useEffect(
     () => () => {
@@ -895,9 +1229,23 @@ function PracticeScreen({
       if (recorder.current) {
         void recorder.current.stop().catch(() => undefined)
       }
+      preparedSpeechAudio.clear()
     },
-    [],
+    [preparedSpeechAudio],
   )
+
+  useEffect(() => {
+    void prepareCueAudio()
+  }, [prepareCueAudio])
+
+  useEffect(() => {
+    if (!canHearModel || !online) {
+      setModelAudioStatus({ normal: 'idle', slow: 'idle' })
+      return
+    }
+    void prepareModelAudio('normal')
+    void prepareModelAudio('slow')
+  }, [canHearModel, online, prepareModelAudio])
 
   useEffect(() => {
     if (state.phase === 'complete' && !completed.current) {
@@ -906,25 +1254,20 @@ function PracticeScreen({
     }
   }, [attempts, onComplete, state.phase])
 
-  async function playWord(word: PracticeWord, pace: SpeechPace): Promise<void> {
-    const blob = await requestSpeech(word.text, word.locale, pace)
-    const url = URL.createObjectURL(blob)
-    const audio = new Audio(url)
-    try {
-      await new Promise<void>((resolve, reject) => {
-        audio.onended = () => resolve()
-        audio.onerror = () => reject(new Error('Audio playback failed'))
-        void audio.play().catch(reject)
-      })
-    } finally {
-      audio.onended = null
-      audio.onerror = null
-      URL.revokeObjectURL(url)
+  function playPreparedWord(word: PracticeWord, pace: SpeechPace): Promise<void> {
+    const blob = preparedSpeechAudio.get(word, pace)
+    if (!blob) {
+      return Promise.reject(new Error('Speech audio is not prepared'))
     }
+    return playPreparedSpeechBlob(blob)
   }
 
   async function playCue() {
     if (!online || playing) {
+      return
+    }
+    if (cueAudioStatus !== 'ready') {
+      void prepareCueAudio()
       return
     }
     const changesState = state.phase === 'ready'
@@ -933,7 +1276,7 @@ function PracticeScreen({
     }
     setPlayingPace('normal')
     try {
-      await playWord(cue, 'normal')
+      await playPreparedWord(cue, 'normal')
       if (changesState) {
         dispatch({ type: 'PLAY_FINISHED' })
       }
@@ -952,10 +1295,14 @@ function PracticeScreen({
     if (!online || playing) {
       return
     }
+    if (modelAudioStatus[pace] !== 'ready') {
+      void prepareModelAudio(pace)
+      return
+    }
     setModelAudioError(null)
     setPlayingPace(pace)
     try {
-      await playWord(spokenAnswer, pace)
+      await playPreparedWord(spokenAnswer, pace)
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         onSessionExpired()
@@ -1016,6 +1363,7 @@ function PracticeScreen({
   async function startRecording() {
     if (
       !online ||
+      preparingRecorder ||
       (state.phase !== 'ready' && state.phase !== 'speech-retry') ||
       !state.hasListened
     ) {
@@ -1025,9 +1373,11 @@ function PracticeScreen({
     setSpellingOutcomes({})
     setHasCheckedSpelling(false)
     setModelAudioError(null)
-    dispatch({ type: 'RECORD' })
+    setPreparingRecorder(true)
     try {
-      recorder.current = await PcmRecorder.start()
+      const preparedRecorder = await PcmRecorder.start()
+      recorder.current = preparedRecorder
+      dispatch({ type: 'RECORD' })
       stopTimer.current = window.setTimeout(() => void finishRecording(), recorder.current.remainingMs)
     } catch (caught) {
       const message =
@@ -1035,6 +1385,8 @@ function PracticeScreen({
           ? 'Microphone access is off. Allow it in Safari settings, then try again.'
           : 'The microphone could not start. Check Safari settings and try again.'
       dispatch({ type: 'FAIL', message })
+    } finally {
+      setPreparingRecorder(false)
     }
   }
 
@@ -1133,9 +1485,6 @@ function PracticeScreen({
   }
 
   const progress = ((state.itemIndex + (state.phase === 'revealed' ? 1 : 0)) / state.totalItems) * 100
-  const canHearModel =
-    spokenOutcome === 'pronunciation-retry' || spokenOutcome === 'different-word'
-
   return (
     <main className="practice-page">
       <div className="practice-topbar">
@@ -1193,16 +1542,54 @@ function PracticeScreen({
 
         {state.phase === 'ready' && !state.error ? (
           <div className={state.hasListened ? 'practice-actions ready-to-speak' : 'practice-actions'}>
-            <button className="secondary-button large-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
+            <button
+              className="secondary-button large-button"
+              type="button"
+              onClick={() => void playCue()}
+              disabled={
+                !online ||
+                playing ||
+                cueAudioStatus === 'loading' ||
+                cueAudioStatus === 'idle'
+              }
+              aria-busy={cueAudioStatus === 'loading'}
+            >
               <Speaker size={22} aria-hidden="true" />
-              {playing ? 'Playing…' : state.hasListened ? 'Listen again' : 'Listen'}
+              {playing
+                ? 'Playing…'
+                : cueAudioStatus === 'loading' || cueAudioStatus === 'idle'
+                  ? 'Preparing audio…'
+                  : cueAudioStatus === 'error'
+                    ? 'Load audio again'
+                    : state.hasListened
+                      ? 'Listen again'
+                      : 'Listen'}
             </button>
+            {cueAudioError ? (
+              <p className="model-audio-error" role="alert">
+                {cueAudioError}
+              </p>
+            ) : null}
             {state.hasListened ? (
               <>
-                <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
+                <button
+                  className="record-button"
+                  type="button"
+                  onClick={() => void startRecording()}
+                  disabled={!online || preparingRecorder}
+                  aria-busy={preparingRecorder}
+                >
                   <Mic size={27} aria-hidden="true" />
-                  <span>Speak English</span>
-                  <small>Say the English answer · Up to 15 seconds</small>
+                  <span>
+                    {preparingRecorder
+                      ? 'Starting microphone…'
+                      : 'Speak English'}
+                  </span>
+                  <small>
+                    {preparingRecorder
+                      ? 'Wait for “Listening…” before speaking'
+                      : 'Say the English answer · Up to 15 seconds'}
+                  </small>
                 </button>
                 <button className="secondary-button skip-button" type="button" onClick={() => skipWord('speaking')}>
                   Skip this item
@@ -1272,12 +1659,25 @@ function PracticeScreen({
                     className="secondary-button model-audio-button"
                     type="button"
                     onClick={() => void playModelWord('normal')}
-                    disabled={!online || playing}
+                    disabled={
+                      !online ||
+                      playing ||
+                      modelAudioStatus.normal === 'loading' ||
+                      modelAudioStatus.normal === 'idle'
+                    }
+                    aria-busy={modelAudioStatus.normal === 'loading'}
                   >
                     <Speaker size={21} aria-hidden="true" />
                     <span className="model-audio-button-copy">
                       <span>
-                        {playingPace === 'normal' ? 'Playing model…' : 'Hear the model answer'}
+                        {playingPace === 'normal'
+                          ? 'Playing model…'
+                          : modelAudioStatus.normal === 'loading' ||
+                              modelAudioStatus.normal === 'idle'
+                            ? 'Preparing model audio…'
+                            : modelAudioStatus.normal === 'error'
+                              ? 'Load model audio'
+                              : 'Hear the model answer'}
                       </span>
                       <small>Normal pace</small>
                     </span>
@@ -1286,12 +1686,25 @@ function PracticeScreen({
                     className="secondary-button model-audio-button"
                     type="button"
                     onClick={() => void playModelWord('slow')}
-                    disabled={!online || playing}
+                    disabled={
+                      !online ||
+                      playing ||
+                      modelAudioStatus.slow === 'loading' ||
+                      modelAudioStatus.slow === 'idle'
+                    }
+                    aria-busy={modelAudioStatus.slow === 'loading'}
                   >
                     <Speaker size={21} aria-hidden="true" />
                     <span className="model-audio-button-copy">
                       <span>
-                        {playingPace === 'slow' ? 'Playing slowly…' : 'Hear it slowly'}
+                        {playingPace === 'slow'
+                          ? 'Playing slowly…'
+                          : modelAudioStatus.slow === 'loading' ||
+                              modelAudioStatus.slow === 'idle'
+                            ? 'Preparing slow audio…'
+                            : modelAudioStatus.slow === 'error'
+                              ? 'Load slow audio'
+                              : 'Hear it slowly'}
                       </span>
                       <small>Slower model</small>
                     </span>
@@ -1326,11 +1739,20 @@ function PracticeScreen({
                 className="record-button"
                 type="button"
                 onClick={() => void startRecording()}
-                disabled={!online || playing}
+                disabled={!online || playing || preparingRecorder}
+                aria-busy={preparingRecorder}
               >
                 <Mic size={27} aria-hidden="true" />
-                <span>Try speaking again</span>
-                <small>Say the English answer · Up to 15 seconds</small>
+                <span>
+                  {preparingRecorder
+                    ? 'Starting microphone…'
+                    : 'Try speaking again'}
+                </span>
+                <small>
+                  {preparingRecorder
+                    ? 'Wait for “Listening…” before speaking'
+                    : 'Say the English answer · Up to 15 seconds'}
+                </small>
               </button>
               <button className="secondary-button skip-button" type="button" onClick={() => skipWord('speaking')}>
                 Skip this item

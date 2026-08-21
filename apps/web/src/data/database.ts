@@ -114,21 +114,25 @@ export async function saveCachedSpeechAudio(
 
   const database = await getDatabase()
   const transaction = database.transaction('speechAudio', 'readwrite')
-  const store = transaction.objectStore('speechAudio')
-  const key = speechAudioKey(text, locale, pace)
-  await store.put({ key, audio, lastAccessedAt: Date.now() })
+  try {
+    const store = transaction.objectStore('speechAudio')
+    const key = speechAudioKey(text, locale, pace)
+    await store.put({ key, audio, lastAccessedAt: Date.now() })
 
-  let entriesToRemove = (await store.count()) - speechAudioCacheEntryLimit
-  let cursor = await store.index('by-last-accessed').openCursor()
-  while (cursor && entriesToRemove > 0) {
-    if (cursor.primaryKey !== key) {
-      await cursor.delete()
-      entriesToRemove -= 1
+    let entriesToRemove = (await store.count()) - speechAudioCacheEntryLimit
+    let cursor = await store.index('by-last-accessed').openCursor()
+    while (cursor && entriesToRemove > 0) {
+      if (cursor.primaryKey !== key) {
+        await cursor.delete()
+        entriesToRemove -= 1
+      }
+      cursor = await cursor.continue()
     }
-    cursor = await cursor.continue()
+    await transaction.done
+  } catch (error) {
+    await transaction.done.catch(() => undefined)
+    throw error
   }
-
-  await transaction.done
 }
 
 export async function listExercises(): Promise<ExerciseSet[]> {

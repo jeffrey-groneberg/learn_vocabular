@@ -132,7 +132,7 @@ describe('internal Speech API', () => {
     })
   })
 
-  it('fails when one phoneme is below 80 and returns targeted feedback', async () => {
+  it('does not fail an otherwise strong answer for one low phoneme', async () => {
     const app = await buildApi(config, {
       ...speech,
       async assess() {
@@ -148,20 +148,7 @@ describe('internal Speech API', () => {
             minimumPhoneme: 72,
           },
           errors: [],
-          problemWords: [
-            {
-              word: 'apple',
-              index: 0,
-              accuracyScore: 88,
-              errors: [],
-              weakestSound: {
-                expected: 'l',
-                heard: 'ɹ',
-                score: 72,
-                position: 'end',
-              },
-            },
-          ],
+          problemWords: [],
         }
       },
     })
@@ -181,15 +168,11 @@ describe('internal Speech API', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toMatchObject({
-      outcome: 'pronunciation-retry',
+      outcome: 'correct',
       pronunciationScore: 90,
-      failedChecks: ['minimumPhoneme'],
-      problemWords: [
-        {
-          word: 'apple',
-          weakestSound: { expected: 'l', heard: 'ɹ', position: 'end' },
-        },
-      ],
+      failedChecks: [],
+      problemWords: [],
+      scores: { minimumPhoneme: 72 },
     })
   })
 

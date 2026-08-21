@@ -9,6 +9,8 @@ export interface GatewayConfig {
   internalApiUrl: string
   storageTableEndpoint?: string
   storageTableName: string
+  sessionCookieName: string
+  sessionCookieSecure: boolean
   production: boolean
   port: number
   webDistPath?: string
@@ -43,6 +45,20 @@ function requiredEnvironment(name: string): string {
   return value
 }
 
+function booleanEnvironment(name: string, fallback: boolean): boolean {
+  const value = process.env[name]
+  if (value === undefined) {
+    return fallback
+  }
+  if (value === 'true') {
+    return true
+  }
+  if (value === 'false') {
+    return false
+  }
+  throw new Error(`${name} must be either "true" or "false"`)
+}
+
 export async function loadGatewayConfig(): Promise<GatewayConfig> {
   const secrets = process.env.KEY_VAULT_URL
     ? await keyVaultSecrets(process.env.KEY_VAULT_URL)
@@ -60,6 +76,9 @@ export async function loadGatewayConfig(): Promise<GatewayConfig> {
       ? { storageTableEndpoint: process.env.STORAGE_TABLE_ENDPOINT }
       : {}),
     storageTableName: process.env.STORAGE_TABLE_NAME ?? 'ratelimits',
+    sessionCookieName:
+      process.env.SESSION_COOKIE_NAME ?? '__Host-vocabulary-voice-tutor',
+    sessionCookieSecure: booleanEnvironment('SESSION_COOKIE_SECURE', true),
     production: process.env.NODE_ENV === 'production',
     port: Number(process.env.PORT ?? (process.env.NODE_ENV === 'production' ? 8080 : 3000)),
     ...(process.env.WEB_DIST_PATH ? { webDistPath: process.env.WEB_DIST_PATH } : {}),

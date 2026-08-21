@@ -17,6 +17,7 @@
     "azure:smoke": "node scripts/smoke-azure.mjs",
     "azure:update-admin-cidr": "node scripts/update-admin-cidr.mjs",
     "dev": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run dev --workspace @vocabulary/web",
+    "dev:azure": "node --env-file-if-exists=.env.azure.local scripts/dev-azure.mjs",
     "dev:api": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run dev --workspace @vocabulary/api",
     "lint": "oxlint --deny-warnings apps packages scripts",
     "test": "vitest run",

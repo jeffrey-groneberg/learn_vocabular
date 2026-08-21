@@ -42,9 +42,9 @@ export const pronunciationScoresSchema = z.strictObject({
   accuracy: pronunciationScoreSchema,
   fluency: pronunciationScoreSchema,
   completeness: pronunciationScoreSchema,
-  prosody: pronunciationScoreSchema,
+  prosody: pronunciationScoreSchema.nullable(),
   minimumWord: pronunciationScoreSchema,
-  minimumPhoneme: pronunciationScoreSchema,
+  minimumPhoneme: pronunciationScoreSchema.nullable(),
 })
 
 const pronunciationSoundFeedbackSchema = z.strictObject({

@@ -39,7 +39,10 @@ export function evaluatePronunciation(
     locale,
   )
   const failedChecks = pronunciationChecks.filter(
-    (check) => evidence.scores[check] < pronunciationPassThreshold,
+    (check) => {
+      const score = evidence.scores[check]
+      return score !== null && score < pronunciationPassThreshold
+    },
   )
   const errors = [...new Set(evidence.errors)]
   const passesPronunciation = failedChecks.length === 0 && errors.length === 0

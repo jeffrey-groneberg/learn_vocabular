@@ -53,7 +53,6 @@ export const pronunciationChecks = [
   'completeness',
   'prosody',
   'minimumWord',
-  'minimumPhoneme',
 ] as const
 export type PronunciationCheck = (typeof pronunciationChecks)[number]
 
@@ -75,9 +74,9 @@ export interface PronunciationScores {
   accuracy: number
   fluency: number
   completeness: number
-  prosody: number
+  prosody: number | null
   minimumWord: number
-  minimumPhoneme: number
+  minimumPhoneme: number | null
 }
 
 export interface PronunciationSoundFeedback {

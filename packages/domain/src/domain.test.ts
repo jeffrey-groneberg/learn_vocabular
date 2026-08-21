@@ -47,7 +47,7 @@ describe('pronunciation decisions', () => {
     problemWords: [],
   }
 
-  it('requires the expected answer and every pronunciation check to reach 80', () => {
+  it('requires the expected answer and every pass criterion to reach 80', () => {
     expect(
       evaluatePronunciation('The apple is red.', 'The apple is red.', 'en-US', passingEvidence)
         .outcome,
@@ -74,6 +74,36 @@ describe('pronunciation decisions', () => {
         failedChecks: [check],
       })
     }
+  })
+
+  it('keeps an isolated low phoneme as diagnostic evidence instead of failing', () => {
+    expect(
+      evaluatePronunciation('Good morning', 'Good morning', 'en-US', {
+        ...passingEvidence,
+        scores: {
+          ...passingEvidence.scores,
+          minimumPhoneme: 61,
+        },
+      }),
+    ).toMatchObject({
+      outcome: 'correct',
+      failedChecks: [],
+    })
+  })
+
+  it('does not fail when Azure cannot provide a prosody score', () => {
+    expect(
+      evaluatePronunciation('Hello', 'Hello', 'en-US', {
+        ...passingEvidence,
+        scores: {
+          ...passingEvidence.scores,
+          prosody: null,
+        },
+      }),
+    ).toMatchObject({
+      outcome: 'correct',
+      failedChecks: [],
+    })
   })
 
   it('fails service-reported errors and still distinguishes a different answer', () => {

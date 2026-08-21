@@ -36,6 +36,29 @@ export interface SpeechService {
   assess(pcm: ArrayBuffer, reference: string, locale: SupportedLocale): Promise<SpeechAssessment | null>
 }
 
+export function isNoSpeechAssessment(
+  assessment: SpeechAssessment,
+): boolean {
+  if (!/[\p{L}\p{N}]/u.test(assessment.recognizedText)) {
+    return true
+  }
+  const { scores, errors, problemWords } = assessment
+  return (
+    scores.overall === 0 &&
+    scores.accuracy === 0 &&
+    scores.fluency === 0 &&
+    scores.completeness === 0 &&
+    errors.length > 0 &&
+    errors.every((error) => error === 'omission') &&
+    problemWords.length > 0 &&
+    problemWords.every(
+      (word) =>
+        word.errors.length > 0 &&
+        word.errors.every((error) => error === 'omission'),
+    )
+  )
+}
+
 const voiceByLocale: Record<SupportedLocale, string> = {
   'en-US': 'en-US-JennyNeural',
   'de-DE': 'de-DE-KatjaNeural',
@@ -62,6 +85,18 @@ const intonationErrorSchema = z.enum(['None', 'Monotone'])
 const confidenceSchema = z.number().min(0).max(1)
 const prosodyBreakConfidenceThreshold = 0.75
 
+function speechErrorDiagnostic(error: unknown): string {
+  if (error instanceof z.ZodError) {
+    return `invalid-response:${error.issues
+      .map((issue) => `${issue.path.join('.')}:${issue.code}`)
+      .join(',')}`
+  }
+  if (error instanceof Error) {
+    return `${error.name}:${error.message.replace(/\s+/gu, ' ').slice(0, 240)}`
+  }
+  return 'unknown'
+}
+
 const prosodyFeedbackSchema = z.object({
   Break: z
     .object({
@@ -85,7 +120,7 @@ const detailedAssessmentSchema = z.object({
           AccuracyScore: scoreSchema,
           FluencyScore: scoreSchema,
           CompletenessScore: scoreSchema,
-          ProsodyScore: scoreSchema,
+          ProsodyScore: scoreSchema.optional(),
           PronScore: scoreSchema,
         }),
         Words: z
@@ -93,7 +128,7 @@ const detailedAssessmentSchema = z.object({
             z.object({
               Word: z.string().min(1).max(120),
               PronunciationAssessment: z.object({
-                AccuracyScore: scoreSchema,
+                AccuracyScore: scoreSchema.optional(),
                 ErrorType: azureErrorSchema,
               }),
               Feedback: z
@@ -185,19 +220,26 @@ export function parsePronunciationAssessmentJson(json: string): PronunciationEvi
   }
 
   const wordScores = best.Words.map(
-    (word) => word.PronunciationAssessment.AccuracyScore,
+    (word) => word.PronunciationAssessment.AccuracyScore ?? 0,
   )
   const phonemeScores = best.Words.flatMap((word) =>
     word.Phonemes.map((phoneme) => phoneme.PronunciationAssessment.AccuracyScore),
   )
-  if (wordScores.length === 0 || phonemeScores.length === 0) {
-    throw new Error('Pronunciation assessment omitted required scoring details')
+  if (wordScores.length === 0) {
+    throw new Error('Pronunciation assessment omitted required word scoring details')
   }
   const errors: PronunciationError[] = []
   const problemWords: PronunciationWordFeedback[] = []
   for (const [wordIndex, word] of best.Words.entries()) {
     const azureError = word.PronunciationAssessment.ErrorType
-    const mappedError = azureError === 'None' ? undefined : errorMap[azureError]
+    const wordAccuracyScore =
+      word.PronunciationAssessment.AccuracyScore ?? 0
+    const mappedError =
+      azureError === 'None'
+        ? word.PronunciationAssessment.AccuracyScore === undefined
+          ? 'mispronunciation'
+          : undefined
+        : errorMap[azureError]
     const detectedErrors = [
       ...(mappedError ? [mappedError] : []),
       ...prosodyErrors(word.Feedback?.Prosody),
@@ -232,9 +274,8 @@ export function parsePronunciationAssessmentJson(json: string): PronunciationEvi
     const hasWeakSound =
       weakestSoundScore !== undefined && weakestSoundScore < pronunciationPassThreshold
     if (
-      word.PronunciationAssessment.AccuracyScore >= pronunciationPassThreshold &&
-      wordSpecificErrors.length === 0 &&
-      !hasWeakSound
+      wordAccuracyScore >= pronunciationPassThreshold &&
+      wordSpecificErrors.length === 0
     ) {
       continue
     }
@@ -251,7 +292,7 @@ export function parsePronunciationAssessmentJson(json: string): PronunciationEvi
     problemWords.push({
       word: word.Word,
       index: wordIndex,
-      accuracyScore: word.PronunciationAssessment.AccuracyScore,
+      accuracyScore: wordAccuracyScore,
       errors: wordSpecificErrors,
       ...(hasWeakSound && weakestPhoneme && weakestSoundScore !== undefined
         ? {
@@ -274,9 +315,10 @@ export function parsePronunciationAssessmentJson(json: string): PronunciationEvi
       accuracy: best.PronunciationAssessment.AccuracyScore,
       fluency: best.PronunciationAssessment.FluencyScore,
       completeness: best.PronunciationAssessment.CompletenessScore,
-      prosody: best.PronunciationAssessment.ProsodyScore,
+      prosody: best.PronunciationAssessment.ProsodyScore ?? null,
       minimumWord: Math.min(...wordScores),
-      minimumPhoneme: Math.min(...phonemeScores),
+      minimumPhoneme:
+        phonemeScores.length === 0 ? null : Math.min(...phonemeScores),
     },
     errors,
     problemWords,
@@ -366,6 +408,10 @@ export class AzureSpeechService implements SpeechService {
         span.setStatus({ code: SpanStatusCode.OK })
         return Buffer.from(result.audioData)
       } catch (error) {
+        console.error(
+          'speech-synthesis-failed',
+          speechErrorDiagnostic(error),
+        )
         span.setStatus({ code: SpanStatusCode.ERROR, message: 'speech-unavailable' })
         throw error
       } finally {
@@ -408,12 +454,22 @@ export class AzureSpeechService implements SpeechService {
           const evidence = parsePronunciationAssessmentJson(
             result.properties.getProperty(PropertyId.SpeechServiceResponse_JsonResult),
           )
-          span.setStatus({ code: SpanStatusCode.OK })
-          return {
+          const speechAssessment = {
             recognizedText: result.text,
             ...evidence,
           }
+          if (isNoSpeechAssessment(speechAssessment)) {
+            span.setAttribute('app.outcome', 'no-speech')
+            span.setStatus({ code: SpanStatusCode.OK })
+            return null
+          }
+          span.setStatus({ code: SpanStatusCode.OK })
+          return speechAssessment
         } catch (error) {
+          console.error(
+            'speech-pronunciation-failed',
+            speechErrorDiagnostic(error),
+          )
           span.setStatus({ code: SpanStatusCode.ERROR, message: 'speech-unavailable' })
           throw error
         } finally {

@@ -63,9 +63,10 @@ evaluation while keeping the learner's library and progress on the iPhone.
   after a pronunciation retry.
 - Scripted English (`en-US`) Azure Speech Pronunciation Assessment with a strict
   `80/100` threshold for overall pronunciation, accuracy, fluency,
-  completeness, prosody, every word, and every phoneme in every direction.
-- Sentence feedback identifies every problem word, Azure's exact error category,
-  and the expected and likely heard IPA sounds when available.
+  completeness, available prosody, and every word in every direction.
+- Individual sound scores are diagnostic evidence, not a pass gate. When a word
+  fails, the weakest sound can select a child-friendly coaching tip with a
+  familiar example and concrete mouth or tongue guidance.
 - Exact spelling passes. Damerau-Levenshtein distance one receives specific
   minor-typo feedback but still requires another attempt; the canonical answer
   stays hidden until the item is correct or skipped.

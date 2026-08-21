@@ -16,12 +16,11 @@ import {
 import { createSessionToken, verifySessionToken } from './security/session-token.js'
 import { privateSourceKey, trustedSourceBucket } from './security/source-key.js'
 
-const sessionCookie = '__Host-vocabulary-voice-tutor'
 const maximumAudioBytes = 500_000
 const defaultWebDist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 function hasValidSession(request: FastifyRequest, config: GatewayConfig): boolean {
-  const token = request.cookies[sessionCookie]
+  const token = request.cookies[config.sessionCookieName]
   return typeof token === 'string' && verifySessionToken(token, config.cookieSigningKey)
 }
 
@@ -187,10 +186,10 @@ export async function buildGateway(
 
     await lockoutStore.clear(sourceKey)
     const session = createSessionToken(config.cookieSigningKey, now)
-    reply.setCookie(sessionCookie, session.token, {
+    reply.setCookie(config.sessionCookieName, session.token, {
       path: '/',
       httpOnly: true,
-      secure: config.production,
+      secure: config.sessionCookieSecure,
       sameSite: 'strict',
       expires: session.expiresAt,
     })
@@ -201,10 +200,10 @@ export async function buildGateway(
     if (!sameOrigin(request)) {
       return reply.status(403).send({ error: 'invalid-request' })
     }
-    reply.clearCookie(sessionCookie, {
+    reply.clearCookie(config.sessionCookieName, {
       path: '/',
       httpOnly: true,
-      secure: config.production,
+      secure: config.sessionCookieSecure,
       sameSite: 'strict',
     })
     return reply.status(204).send()
@@ -258,21 +257,35 @@ export async function buildGateway(
       return reply.status(400).send({ error: 'invalid-request' })
     }
 
-    const response = await fetch(`${config.internalApiUrl}/pronunciation`, {
-      method: 'POST',
-      headers: {
-        ...forwardedTraceHeaders(request),
-        'content-type': 'audio/wav',
-        'content-length': String(contentLength),
-        'x-internal-gateway-key': config.internalApiCredential,
-        'x-vocabulary-locale': locale,
-        'x-vocabulary-mode': mode,
-        'x-vocabulary-reference': request.headers['x-vocabulary-reference'] as string,
-      },
-      body: request.body as Readable,
-      duplex: 'half',
-      signal: AbortSignal.timeout(25_000),
-    })
+    let response: Response
+    try {
+      response = await fetch(`${config.internalApiUrl}/pronunciation`, {
+        method: 'POST',
+        headers: {
+          ...forwardedTraceHeaders(request),
+          'content-type': 'audio/wav',
+          'content-length': String(contentLength),
+          'x-internal-gateway-key': config.internalApiCredential,
+          'x-vocabulary-locale': locale,
+          'x-vocabulary-mode': mode,
+          'x-vocabulary-reference': request.headers[
+            'x-vocabulary-reference'
+          ] as string,
+        },
+        body: request.body as Readable,
+        duplex: 'half',
+        signal: AbortSignal.timeout(25_000),
+      })
+    } catch (error) {
+      console.error(
+        'pronunciation-forward-failed',
+        error instanceof Error ? error.name : 'unknown',
+      )
+      return reply.status(503).send({ error: 'speech-unavailable' })
+    }
+    if (!response.ok) {
+      console.error('pronunciation-api-failed', response.status)
+    }
     reply.status(response.status)
     reply.header('content-type', response.headers.get('content-type') ?? 'application/json')
     if (!response.body) {

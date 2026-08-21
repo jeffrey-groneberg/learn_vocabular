@@ -13,9 +13,9 @@ that request and is then discarded.
 - Begin every item with a replayable audio cue while complete written answers
   stay hidden, apart from exact problem-word feedback during a retry.
 - Record the English word or sentence for pronunciation feedback in every
-  direction. Every aggregate, prosody, word, and individual-sound check must
-  reach `80/100`. Feedback identifies each problem word, its exact error, and
-  the expected and likely heard IPA sounds when Azure provides them.
+  direction. Available aggregate, prosody, and word checks must reach `80/100`.
+  Individual sound data does not fail an otherwise correct answer; it helps
+  select a child-friendly mouth or tongue tip when a word needs work.
 - After a pronunciation retry or answer mismatch, replay the complete English
   model answer at normal or slower pace.
 - In English → German, write the German translation and the English answer. In
@@ -75,39 +75,43 @@ scripts/              Mac-only bootstrap, deployment, IP update, and smoke tools
 Prerequisites:
 
 - Node.js 24 or newer and npm
-- Terraform 1.15.x
 - Azure CLI
-- Docker with buildx for container validation and deployment
-- macOS Keychain and FileVault for production operations
+- macOS Keychain with the runtime secrets created by `npm run azure:bootstrap`,
+  unless all four development secrets are supplied as environment variables
 
-Install and run the frontend:
+Install dependencies:
 
 ```sh
 npm install
-npm run dev
 ```
 
-Run the local gateway in another terminal with development-only values:
+For an Azure-backed local app, sign in with Azure CLI, copy the environment
+template, and configure either `SPEECH_ENDPOINT` or the Speech resource group
+and account name:
 
 ```sh
-ACCESS_CODE_HASH='<encoded scrypt hash>' \
-COOKIE_SIGNING_KEY='<random key>' \
-RATE_LIMIT_PEPPER='<random pepper>' \
-INTERNAL_API_CREDENTIAL='<random internal credential>' \
-INTERNAL_API_URL='http://127.0.0.1:3001' \
-npm run dev:server --workspace @vocabulary/web
+az login
+cp .env.azure.local.example .env.azure.local
+# Edit .env.azure.local
+npm run dev:azure
 ```
 
-Run the internal API separately:
+The launcher builds the shared packages, reads the four existing runtime
+secrets from macOS Keychain, resolves the configured Speech resource, and
+starts the Speech API, gateway, and Vite UI together. Open
+the URL printed by the launcher (`http://127.0.0.1:5173` by default) and use the
+normal family access code. The Speech API authenticates with
+`DefaultAzureCredential`, including the identity selected by `az login`.
 
-```sh
-INTERNAL_API_CREDENTIAL='<same internal credential>' \
-SPEECH_ENDPOINT='https://<speech-name>.cognitiveservices.azure.com/' \
-npm run dev:api
-```
+Local and Azure behavior is selected only through explicit configuration:
+`SPEECH_ENDPOINT`, ports, the Vite gateway proxy, and
+`SESSION_COOKIE_NAME`/`SESSION_COOKIE_SECURE`. The app does not inspect its
+hostname or attempt to detect where it is running.
 
-The real Speech adapter uses the signed-in Azure identity locally. Routine tests
-use a test double and do not need cloud credentials.
+`localhost` is a browser-secure microphone context. To test from a phone against
+the Mac, place the Vite address behind a trusted HTTPS development tunnel or
+local certificate; plain LAN HTTP cannot request microphone access. Routine
+tests use a Speech test double and do not need Azure credentials.
 
 Project checks:
 

@@ -1,5 +1,6 @@
 const targetSampleRate = 16_000
 const maximumAttemptMs = 15_000
+const microphoneWarmupMs = 500
 
 function downsample(samples: Float32Array, sourceRate: number): Float32Array {
   if (sourceRate === targetSampleRate) {
@@ -62,7 +63,9 @@ export class PcmRecorder {
   private readonly context: AudioContext
   private readonly source: MediaStreamAudioSourceNode
   private readonly processor: ScriptProcessorNode
-  private readonly startedAt = performance.now()
+  private readonly ready: Promise<void>
+  private resolveReady: (() => void) | undefined
+  private startedAt = 0
   private stopped = false
 
   private constructor(
@@ -75,9 +78,14 @@ export class PcmRecorder {
     this.context = context
     this.source = source
     this.processor = processor
+    this.ready = new Promise((resolve) => {
+      this.resolveReady = resolve
+    })
     processor.onaudioprocess = (event) => {
       if (!this.stopped) {
         this.chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)))
+        this.resolveReady?.()
+        this.resolveReady = undefined
       }
     }
   }
@@ -99,7 +107,28 @@ export class PcmRecorder {
     const processor = context.createScriptProcessor(4096, 1, 1)
     source.connect(processor)
     processor.connect(context.destination)
-    return new PcmRecorder(stream, context, source, processor)
+    const recorder = new PcmRecorder(stream, context, source, processor)
+    await context.resume()
+    try {
+      await Promise.race([
+        recorder.ready,
+        new Promise<never>((_resolve, reject) => {
+          window.setTimeout(
+            () => reject(new Error('The microphone audio pipeline did not start.')),
+            2_000,
+          )
+        }),
+      ])
+    } catch (error) {
+      await recorder.dispose()
+      throw error
+    }
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, microphoneWarmupMs)
+    })
+    recorder.chunks.length = 0
+    recorder.startedAt = performance.now()
+    return recorder
   }
 
   get remainingMs(): number {
@@ -111,10 +140,7 @@ export class PcmRecorder {
       throw new Error('This recording has already stopped.')
     }
     this.stopped = true
-    this.processor.disconnect()
-    this.source.disconnect()
-    this.stream.getTracks().forEach((track) => track.stop())
-    await this.context.close()
+    await this.dispose()
 
     const length = this.chunks.reduce((total, chunk) => total + chunk.length, 0)
     if (length === 0) {
@@ -127,5 +153,14 @@ export class PcmRecorder {
       offset += chunk.length
     }
     return encodeWav(downsample(samples, this.context.sampleRate))
+  }
+
+  private async dispose(): Promise<void> {
+    this.processor.disconnect()
+    this.source.disconnect()
+    this.stream.getTracks().forEach((track) => track.stop())
+    if (this.context.state !== 'closed') {
+      await this.context.close()
+    }
   }
 }
