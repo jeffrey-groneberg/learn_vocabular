@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-21T08:30:21.183Z",
+  "title": "Design System: Vocabulary Voice Tutor",
+  "extensions": {
+    "colorMeta": {
+      "cobalt": {
+        "role": "primary",
+        "displayName": "Cabinet Cobalt",
+        "tonalRamp": [
+          "oklch(15% 0.217 264.3)",
+          "oklch(27% 0.217 264.3)",
+          "oklch(39% 0.217 264.3)",
+          "oklch(51% 0.217 264.3)",
+          "oklch(63% 0.217 264.3)",
+          "oklch(75% 0.217 264.3)",
+          "oklch(87% 0.217 264.3)",
+          "oklch(95% 0.217 264.3)"
+        ]
+      },
+      "cobalt-dark": {
+        "role": "primary",
+        "displayName": "Cabinet Navy",
+        "tonalRamp": [
+          "oklch(15% 0.091 264.2)",
+          "oklch(27% 0.091 264.2)",
+          "oklch(39% 0.091 264.2)",
+          "oklch(51% 0.091 264.2)",
+          "oklch(63% 0.091 264.2)",
+          "oklch(75% 0.091 264.2)",
+          "oklch(87% 0.091 264.2)",
+          "oklch(95% 0.091 264.2)"
+        ]
+      },
+      "cobalt-light": {
+        "role": "primary",
+        "displayName": "Selection Blue",
+        "tonalRamp": [
+          "oklch(15% 0.036 268.3)",
+          "oklch(27% 0.036 268.3)",
+          "oklch(39% 0.036 268.3)",
+          "oklch(51% 0.036 268.3)",
+          "oklch(63% 0.036 268.3)",
+          "oklch(75% 0.036 268.3)",
+          "oklch(87% 0.036 268.3)",
+          "oklch(95% 0.036 268.3)"
+        ]
+      },
+      "coral": {
+        "role": "secondary",
+        "displayName": "Coral Index",
+        "tonalRamp": [
+          "oklch(15% 0.196 33.4)",
+          "oklch(27% 0.196 33.4)",
+          "oklch(39% 0.196 33.4)",
+          "oklch(51% 0.196 33.4)",
+          "oklch(63% 0.196 33.4)",
+          "oklch(75% 0.196 33.4)",
+          "oklch(87% 0.196 33.4)",
+          "oklch(95% 0.196 33.4)"
+        ]
+      },
+      "coral-action": {
+        "role": "secondary",
+        "displayName": "Recording Coral",
+        "tonalRamp": [
+          "oklch(15% 0.170 31.7)",
+          "oklch(27% 0.170 31.7)",
+          "oklch(39% 0.170 31.7)",
+          "oklch(51% 0.170 31.7)",
+          "oklch(63% 0.170 31.7)",
+          "oklch(75% 0.170 31.7)",
+          "oklch(87% 0.170 31.7)",
+          "oklch(95% 0.170 31.7)"
+        ]
+      },
+      "yellow": {
+        "role": "tertiary",
+        "displayName": "Specimen Yellow",
+        "tonalRamp": [
+          "oklch(15% 0.152 94.2)",
+          "oklch(27% 0.152 94.2)",
+          "oklch(39% 0.152 94.2)",
+          "oklch(51% 0.152 94.2)",
+          "oklch(63% 0.152 94.2)",
+          "oklch(75% 0.152 94.2)",
+          "oklch(87% 0.152 94.2)",
+          "oklch(95% 0.152 94.2)"
+        ]
+      },
+      "green": {
+        "role": "tertiary",
+        "displayName": "Correct Green",
+        "tonalRamp": [
+          "oklch(15% 0.097 164)",
+          "oklch(27% 0.097 164)",
+          "oklch(39% 0.097 164)",
+          "oklch(51% 0.097 164)",
+          "oklch(63% 0.097 164)",
+          "oklch(75% 0.097 164)",
+          "oklch(87% 0.097 164)",
+          "oklch(95% 0.097 164)"
+        ]
+      },
+      "green-light": {
+        "role": "tertiary",
+        "displayName": "Correct Wash",
+        "tonalRamp": [
+          "oklch(15% 0.023 168.7)",
+          "oklch(27% 0.023 168.7)",
+          "oklch(39% 0.023 168.7)",
+          "oklch(51% 0.023 168.7)",
+          "oklch(63% 0.023 168.7)",
+          "oklch(75% 0.023 168.7)",
+          "oklch(87% 0.023 168.7)",
+          "oklch(95% 0.023 168.7)"
+        ]
+      },
+      "red-light": {
+        "role": "tertiary",
+        "displayName": "Error Wash",
+        "tonalRamp": [
+          "oklch(15% 0.029 31.1)",
+          "oklch(27% 0.029 31.1)",
+          "oklch(39% 0.029 31.1)",
+          "oklch(51% 0.029 31.1)",
+          "oklch(63% 0.029 31.1)",
+          "oklch(75% 0.029 31.1)",
+          "oklch(87% 0.029 31.1)",
+          "oklch(95% 0.029 31.1)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Warm Stock",
+        "tonalRamp": [
+          "oklch(15% 0.013 86.8)",
+          "oklch(27% 0.013 86.8)",
+          "oklch(39% 0.013 86.8)",
+          "oklch(51% 0.013 86.8)",
+          "oklch(63% 0.013 86.8)",
+          "oklch(75% 0.013 86.8)",
+          "oklch(87% 0.013 86.8)",
+          "oklch(95% 0.013 86.8)"
+        ]
+      },
+      "paper-light": {
+        "role": "neutral",
+        "displayName": "Clean Stock",
+        "tonalRamp": [
+          "oklch(15% 0.008 91.5)",
+          "oklch(27% 0.008 91.5)",
+          "oklch(39% 0.008 91.5)",
+          "oklch(51% 0.008 91.5)",
+          "oklch(63% 0.008 91.5)",
+          "oklch(75% 0.008 91.5)",
+          "oklch(87% 0.008 91.5)",
+          "oklch(95% 0.008 91.5)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink Navy",
+        "tonalRamp": [
+          "oklch(15% 0.048 267.3)",
+          "oklch(27% 0.048 267.3)",
+          "oklch(39% 0.048 267.3)",
+          "oklch(51% 0.048 267.3)",
+          "oklch(63% 0.048 267.3)",
+          "oklch(75% 0.048 267.3)",
+          "oklch(87% 0.048 267.3)",
+          "oklch(95% 0.048 267.3)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Annotation Grey",
+        "tonalRamp": [
+          "oklch(15% 0.024 261.7)",
+          "oklch(27% 0.024 261.7)",
+          "oklch(39% 0.024 261.7)",
+          "oklch(51% 0.024 261.7)",
+          "oklch(63% 0.024 261.7)",
+          "oklch(75% 0.024 261.7)",
+          "oklch(87% 0.024 261.7)",
+          "oklch(95% 0.024 261.7)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Ruler Grey",
+        "tonalRamp": [
+          "oklch(15% 0.020 87.5)",
+          "oklch(27% 0.020 87.5)",
+          "oklch(39% 0.020 87.5)",
+          "oklch(51% 0.020 87.5)",
+          "oklch(63% 0.020 87.5)",
+          "oklch(75% 0.020 87.5)",
+          "oklch(87% 0.020 87.5)",
+          "oklch(95% 0.020 87.5)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Vocabulary Specimen",
+        "purpose": "The current practice word only; it is the largest type in the system."
+      },
+      "headline": {
+        "displayName": "Page Headline",
+        "purpose": "Page-level h1 titles."
+      },
+      "title": {
+        "displayName": "Drawer Title",
+        "purpose": "Drawer names and section-level h2 titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading and explanatory copy."
+      },
+      "field-label": {
+        "displayName": "Field Label",
+        "purpose": "Form labels and direct learner instructions."
+      },
+      "specimen-meta": {
+        "displayName": "Specimen Metadata",
+        "purpose": "Language codes, row numbers, table headings, practice mode, and direction."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Button copy across primary, secondary, record, and stop controls."
+      }
+    },
+    "shadows": [
+      {
+        "name": "primary-action-rest",
+        "value": "0 4px 10px rgba(16, 36, 84, 0.24)",
+        "purpose": "Every primary button at rest."
+      },
+      {
+        "name": "primary-action-pressed",
+        "value": "0 2px 5px rgba(16, 36, 84, 0.2)",
+        "purpose": "Primary buttons after the 2px active press."
+      },
+      {
+        "name": "specimen-sheet",
+        "value": "6px 10px 24px rgba(16, 36, 84, 0.16)",
+        "purpose": "Reused by the setup sheet and live practice specimen."
+      },
+      {
+        "name": "drawer-stack",
+        "value": "5px 9px 22px rgba(16, 36, 84, 0.15)",
+        "purpose": "Repeated on every word-list drawer card."
+      }
+    ],
+    "motion": [
+      {
+        "name": "progress-fill",
+        "value": "transform 220ms ease",
+        "purpose": "Advances the practice progress track with scaleX()."
+      },
+      {
+        "name": "recording-soundbar",
+        "value": "720ms ease-in-out infinite alternate",
+        "purpose": "Animates the five yellow listening bars with staggered delays."
+      },
+      {
+        "name": "spinner",
+        "value": "800ms linear infinite",
+        "purpose": "Rotates the processing and loading indicator."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms; 1 iteration",
+        "purpose": "Collapses all animation and transition durations under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "520px"
+      },
+      {
+        "name": "wide",
+        "value": "640px"
+      }
+    ],
+    "focus": [
+      {
+        "name": "focus-ring",
+        "value": "outline: 3px solid var(--coral); outline-offset: 3px",
+        "purpose": "Shared visible focus treatment for buttons, inputs, and radio-card labels."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The repeated cobalt action with a physical 2px pressed state.",
+      "html": "<button class=\"ds-primary-button\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>New list</button>",
+      "css": ".ds-primary-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; padding: 0.7rem 1rem; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--cobalt, #1747d1); color: #fff; box-shadow: 0 4px 10px rgba(16, 36, 84, 0.24); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-primary-button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 5px rgba(16, 36, 84, 0.2); } .ds-primary-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; } .ds-primary-button:disabled { cursor: not-allowed; opacity: 0.5; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The clean-stock alternative for cancel, listen, retry, and return actions.",
+      "html": "<button class=\"ds-secondary-button\"><svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg>Word lists</button>",
+      "css": ".ds-secondary-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; padding: 0.7rem 1rem; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--paper-light, #fffdf7); color: var(--cobalt-dark, #102454); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-secondary-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; } .ds-secondary-button:disabled { cursor: not-allowed; opacity: 0.5; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "The shared large, high-contrast field for access codes, list names, words, and spelling.",
+      "html": "<label class=\"ds-field\"><span>German</span><input value=\"Schmetterling\" aria-label=\"German word\"/></label>",
+      "css": ".ds-field { display: block; color: var(--cobalt-dark, #102454); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-weight: 680; } .ds-field > span { display: block; margin-bottom: 0.45rem; } .ds-field input { width: 100%; min-height: 52px; padding: 0.72rem 0.85rem; border: 2px solid var(--rule, #c9c3b5); border-radius: 8px; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); font: inherit; font-size: 1.05rem; font-weight: 400; } .ds-field input:focus { border-color: var(--cobalt, #1747d1); } .ds-field input:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Cabinet Header",
+      "kind": "nav",
+      "refersTo": "cabinet-header",
+      "description": "The safe-area-aware cobalt frame with one quiet session action.",
+      "html": "<header class=\"ds-cabinet-header\"><strong>Vocabulary Voice Tutor</strong><button aria-label=\"Log out\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 17l5-5-5-5\"/><path d=\"M15 12H3\"/><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/></svg></button></header>",
+      "css": ".ds-cabinet-header { min-height: calc(78px + env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: calc(0.9rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.9rem max(1rem, env(safe-area-inset-left)); border-bottom: 7px solid var(--cobalt-dark, #102454); background: var(--cobalt, #1747d1); color: #fff; font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-cabinet-header strong { font-size: clamp(1.05rem, 4.5vw, 1.27rem); line-height: 1; letter-spacing: -0.025em; font-variation-settings: 'wght' 780; } .ds-cabinet-header button { width: 46px; min-width: 46px; height: 46px; display: inline-grid; place-items: center; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; background: transparent; color: #fff; cursor: pointer; } .ds-cabinet-header button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Word List Drawer",
+      "kind": "card",
+      "refersTo": "card-drawer",
+      "description": "The recurring cabinet drawer for one bilingual exercise set.",
+      "html": "<article class=\"ds-drawer\"><div class=\"ds-drawer__meta\"><span>EN</span><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 8 6 6\"/><path d=\"m4 14 6-6 2-3\"/><path d=\"M2 5h12\"/><path d=\"m22 22-5-10-5 10\"/><path d=\"M14 18h6\"/></svg><span>DE</span></div><h2>Unit 4</h2><p>12 word pairs</p><div class=\"ds-drawer__ruler\" aria-hidden=\"true\"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><button>Practise this list</button></article>",
+      "css": ".ds-drawer { position: relative; overflow: hidden; padding: 1.3rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 0; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); box-shadow: 5px 9px 22px rgba(16, 36, 84, 0.15); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-drawer::before { content: ''; position: absolute; top: 0; right: 34px; width: 64px; height: 13px; border: 3px solid var(--cobalt-dark, #102454); border-top: 0; background: var(--coral, #e54b2b); } .ds-drawer__meta { display: flex; align-items: center; gap: 0.45rem; margin: 0.5rem 0 1.2rem; color: var(--cobalt, #1747d1); font-size: 0.73rem; letter-spacing: 0.1em; font-variation-settings: 'wght' 800; } .ds-drawer h2 { min-height: 2.9rem; margin: 0 0 0.35rem; color: var(--cobalt-dark, #102454); font-size: 1.45rem; line-height: 1.08; letter-spacing: -0.025em; font-variation-settings: 'wght' 720; } .ds-drawer p { color: var(--muted, #626a78); } .ds-drawer__ruler { display: flex; align-items: start; justify-content: space-between; height: 20px; margin: 1.4rem 0; border-top: 2px solid var(--rule, #c9c3b5); } .ds-drawer__ruler span { width: 1px; height: 7px; background: var(--rule, #c9c3b5); } .ds-drawer__ruler span:nth-child(odd) { height: 12px; } .ds-drawer button { width: 100%; min-height: 48px; border: 2px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--cobalt, #1747d1); color: #fff; box-shadow: 0 4px 10px rgba(16, 36, 84, 0.24); font: inherit; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-drawer button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 5px rgba(16, 36, 84, 0.2); } .ds-drawer button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Mode Choice Card",
+      "kind": "card",
+      "refersTo": "choice-card",
+      "description": "A radio-backed mode choice whose selected and focus states cover the whole card.",
+      "html": "<label class=\"ds-choice-card\"><input type=\"radio\" name=\"mode-demo\" checked/><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z\"/><path d=\"M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z\"/></svg><span><strong>Learn</strong><small>Listen first, then speak and spell.</small></span><svg class=\"ds-choice-card__check\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m20 6-11 11-5-5\"/></svg></label>",
+      "css": ".ds-choice-card { min-height: 88px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.85rem; padding: 0.85rem; border: 2px solid var(--rule, #c9c3b5); border-radius: 0; background: transparent; color: var(--ink, #172038); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; cursor: pointer; } .ds-choice-card input { position: absolute; width: 1px; height: 1px; opacity: 0; } .ds-choice-card strong, .ds-choice-card small { display: block; } .ds-choice-card small { margin-top: 0.2rem; color: var(--muted, #626a78); font-weight: 450; } .ds-choice-card__check { opacity: 0; } .ds-choice-card:has(input:checked) { border-color: var(--cobalt, #1747d1); background: var(--cobalt-light, #dce6ff); color: var(--cobalt-dark, #102454); } .ds-choice-card:has(input:checked) .ds-choice-card__check { opacity: 1; } .ds-choice-card:has(input:focus-visible) { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Practice Specimen",
+      "kind": "custom",
+      "refersTo": "practice-specimen",
+      "description": "The signature sheet that presents direction, source word, target state, and measurement line.",
+      "html": "<section class=\"ds-specimen\"><div class=\"ds-specimen__meta\"><span>EN -&gt; DE</span><span>LEARN</span></div><p class=\"ds-specimen__label\">Word pair</p><p class=\"ds-specimen__word\">butterfly</p><div class=\"ds-specimen__target ds-specimen__target--visible\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/></svg><strong>Schmetterling</strong></div><div class=\"ds-specimen__measure\" aria-hidden=\"true\"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></section>",
+      "css": ".ds-specimen { position: relative; padding: 1.2rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 0; background: var(--paper-light, #fffdf7); color: var(--ink, #172038); box-shadow: 6px 10px 24px rgba(16, 36, 84, 0.16); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-specimen::before { content: ''; width: 72px; height: 13px; position: absolute; top: 0; right: 35px; border: 3px solid var(--cobalt-dark, #102454); border-top: 0; background: var(--coral, #e54b2b); } .ds-specimen__meta { display: flex; justify-content: space-between; margin: 0.35rem 0 2rem; color: var(--cobalt, #1747d1); font-size: 0.72rem; letter-spacing: 0.1em; font-variation-settings: 'wght' 800; } .ds-specimen__label { margin: 0 0 0.45rem; color: var(--muted, #626a78); font-size: 0.8rem; letter-spacing: 0.04em; font-variation-settings: 'wght' 700; } .ds-specimen__word { margin: 0 0 0.8rem; overflow-wrap: anywhere; color: var(--cobalt-dark, #102454); font-size: clamp(2.5rem, 12vw, 5.4rem); line-height: 0.95; letter-spacing: -0.05em; font-variation-settings: 'wght' 780; } .ds-specimen__target { min-height: 52px; display: flex; align-items: center; gap: 0.7rem; color: var(--muted, #626a78); } .ds-specimen__target--visible { color: var(--coral, #e54b2b); } .ds-specimen__target strong { overflow-wrap: anywhere; color: var(--ink, #172038); font-size: clamp(1.55rem, 6vw, 2.6rem); } .ds-specimen__measure { display: flex; align-items: start; justify-content: space-between; height: 20px; margin: 1.4rem 0; border-top: 2px solid var(--rule, #c9c3b5); } .ds-specimen__measure span { width: 1px; height: 7px; background: var(--rule, #c9c3b5); } .ds-specimen__measure span:nth-child(4n + 1) { height: 12px; }"
+    },
+    {
+      "name": "Record Button",
+      "kind": "button",
+      "refersTo": "record-button",
+      "description": "The large recording action that makes the microphone step unmistakable.",
+      "html": "<button class=\"ds-record-button\"><svg viewBox=\"0 0 24 24\" width=\"27\" height=\"27\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"/><path d=\"M12 19v3\"/></svg><span>Speak answer</span><small>Up to 8 seconds</small></button>",
+      "css": ".ds-record-button { min-height: 76px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; justify-items: start; column-gap: 0.75rem; padding: 0.7rem 1rem; border: 3px solid var(--cobalt-dark, #102454); border-radius: 8px; background: var(--coral-action, #b3311d); color: #fff; box-shadow: 0 5px 12px rgba(16, 36, 84, 0.26); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; font-variation-settings: 'wght' 700; cursor: pointer; } .ds-record-button svg { grid-row: 1 / 3; } .ds-record-button span { align-self: end; font-size: 1.08rem; } .ds-record-button small { align-self: start; color: #fff; font-size: 0.75rem; } .ds-record-button:focus-visible { outline: 3px solid var(--coral, #e54b2b); outline-offset: 3px; } .ds-record-button:disabled { cursor: not-allowed; opacity: 0.5; }"
+    },
+    {
+      "name": "Feedback Panel",
+      "kind": "custom",
+      "refersTo": "feedback-panel",
+      "description": "An icon-and-copy result panel; semantic classes swap the complete color treatment.",
+      "html": "<div class=\"ds-feedback ds-feedback--correct\" role=\"status\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m20 6-11 11-5-5\"/></svg><div><strong>Spelling correct</strong><p>That sounded right.</p></div></div>",
+      "css": ".ds-feedback { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.9rem; border: 2px solid var(--cobalt, #1747d1); border-radius: 0; background: var(--cobalt-light, #dce6ff); color: var(--cobalt-dark, #102454); font-family: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible', system-ui, sans-serif; } .ds-feedback p { margin: 0.2rem 0 0; } .ds-feedback--correct { border-color: var(--green, #197353); background: var(--green-light, #dcefe7); color: #105d43; } .ds-feedback--minor-typo { border-color: #b68b00; background: #fff4bf; color: #694f00; } .ds-feedback--incorrect { border-color: var(--coral, #e54b2b); background: var(--red-light, #f8dfda); color: #8c2d1d; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Language Specimen Cabinet",
+    "overview": "Vocabulary Voice Tutor realizes the Creative North Star as a working language specimen cabinet: a warm paper field is ruled at 48px intervals, cobalt frames the application, and word lists become thick-bordered drawers with coral index tabs, measurement ticks, and numbered entries. The shipped PWA icon repeats the same cabinet silhouette in cobalt, yellow, ink navy, and coral, so the world survives from home screen to practice flow.\n\nThe system is tactile and archival rather than playful or gamified. Atkinson Hyperlegible Next carries every role; oversized vocabulary specimens, compact index labels, and calm plain-language feedback keep a 9-13-year-old learner oriented without talking down to them. Structural surfaces stay square and substantial, controls soften to 8px, and cobalt-cast shadows make cards feel like physical trays rather than floating glass panels.\n\nMobile-first safe areas, 44-76px controls, visible coral focus rings, and a reduced-motion override are part of the visual identity, not add-ons. Color marks action and state but never carries correctness alone; every feedback panel includes an icon and explicit copy.",
+    "keyCharacteristics": [
+      "Warm paper stock with a faint 48px vertical ruling.",
+      "Cobalt cabinet framing with ink-navy structure and coral index tabs.",
+      "One hyperlegible variable sans across display, reading, labels, and controls.",
+      "Square specimen trays paired with gently rounded interactive controls.",
+      "Measurement ticks, numbered rows, ledgers, and stamps used as functional cabinet details.",
+      "Calm, explicit feedback without points, streaks, or celebratory game chrome."
+    ],
+    "rules": [
+      {
+        "name": "The Cabinet Palette Rule",
+        "body": "Warm Stock is the field, Clean Stock is the object, Cabinet Navy supplies structure, and Cabinet Cobalt identifies action or selection. Do not flatten those four jobs into one generic white-and-blue surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The Feedback Has a Job Rule",
+        "body": "Coral marks focus, failure, or a physical index tab; yellow marks attention; green marks correctness. These hues are never free decoration, and state always includes an icon plus words.",
+        "section": "colors"
+      },
+      {
+        "name": "The One-Face Rule",
+        "body": "Keep every role in Atkinson Hyperlegible Next. Hierarchy comes from the shipped variable weights, scale, and tracking, not from adding a display or monospace family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Specimen Scale Rule",
+        "body": "The live vocabulary word owns the largest type. Page headlines stop at the smaller headline tier so the learner's current word remains the visual specimen.",
+        "section": "typography"
+      },
+      {
+        "name": "The Index Label Rule",
+        "body": "Small tracked capitals belong only to real cabinet metadata such as language codes, directions, modes, row numbers, and table headings. Do not invent eyebrow copy merely to reuse the style.",
+        "section": "typography"
+      },
+      {
+        "name": "The Cobalt-Cast Rule",
+        "body": "System shadows use Cabinet Navy (16, 36, 84) at low opacity and fall down or down-right. Do not introduce neutral-black glows, glass blur, or unrelated shadow colors.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Pressed-Drawer Rule",
+        "body": "Primary actions move down 2px and shorten their shadow when active. The interface communicates pressure, not hover levitation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the Warm Stock page, Clean Stock objects, navy structure, and cobalt actions as distinct layers.",
+      "Do use square, thick-bordered trays for content and reserve the 8px radius for interactive controls.",
+      "Do keep touch targets at the shipped 44-76px minimum heights and preserve iPhone safe-area padding.",
+      "Do use coral tabs, ruler ticks, row numbers, ledgers, and stamps only when they identify or measure real content.",
+      "Do pair every correctness, warning, and error color with an icon and explicit calm copy.",
+      "Do preserve the 640px expansion and 520px compact behaviors when adding screens.",
+      "Do honor prefers-reduced-motion by collapsing animation and transition durations to 0.01ms."
+    ],
+    "donts": [
+      "Don't add points, streaks, trophies, confetti, mascots, or other game chrome to this specimen-cabinet world.",
+      "Don't turn tracked specimen metadata into generic marketing kickers or decorative eyebrows.",
+      "Don't round drawer cards, sheets, rows, ledgers, or feedback panels; structural objects stay square.",
+      "Don't use yellow, coral, or green as free decoration; every use must keep its shipped attention, focus/error, or correctness job.",
+      "Don't introduce glassmorphism, blurred panels, neutral-black glows, or hover-only affordances.",
+      "Don't add a second font family or a monospace role; the shipped system is intentionally one-face."
+    ]
+  }
+}

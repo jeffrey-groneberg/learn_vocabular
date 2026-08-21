@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.server.tsbuildinfo",
+    "types": ["node"],
+    "noEmit": true,
+    "composite": true
+  },
+  "include": [
+    "server",
+    "../../packages/domain/src",
+    "../../packages/observability/src/index.ts",
+    "../../packages/observability/src/node.ts"
+  ]
+}

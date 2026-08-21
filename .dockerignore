@@ -1,0 +1,17 @@
+.git
+.github
+.impeccable
+.DS_Store
+*.log
+
+node_modules
+**/node_modules
+coverage
+**/dist
+**/dist-server
+
+infra
+scripts
+DESIGN.md
+PRODUCT.md
+README.md

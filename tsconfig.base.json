@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@vocabulary/domain": ["./packages/domain/src/index.ts"],
+      "@vocabulary/observability": ["./packages/observability/src/index.ts"],
+      "@vocabulary/observability/browser": ["./packages/observability/src/browser.ts"],
+      "@vocabulary/observability/node": ["./packages/observability/src/node.ts"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true
+  }
+}

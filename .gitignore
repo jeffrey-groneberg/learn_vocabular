@@ -1,0 +1,20 @@
+node_modules/
+dist/
+dist-server/
+coverage/
+.DS_Store
+*.log
+.impeccable/hook.cache.json
+
+# Local Azure and Terraform material
+infra/.terraform/
+infra/state/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfplan
+infra/*.auto.tfvars
+infra/terraform.tfvars
+
+# Local deployment outputs
+*.digest.json
+*.secrets.json

@@ -1,0 +1,11 @@
+.terraform/
+state/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.plan
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+image-digests*
+secret-inputs*

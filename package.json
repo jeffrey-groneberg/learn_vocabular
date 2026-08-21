@@ -1,0 +1,35 @@
+{
+  "name": "vocabulary-voice-tutor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A private, mobile-first English and German vocabulary tutor.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run build --workspace @vocabulary/web && npm run build --workspace @vocabulary/api",
+    "azure:bootstrap": "node scripts/bootstrap-azure.mjs",
+    "azure:deploy": "node scripts/deploy-azure.mjs",
+    "azure:smoke": "node scripts/smoke-azure.mjs",
+    "azure:update-admin-cidr": "node scripts/update-admin-cidr.mjs",
+    "dev": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run dev --workspace @vocabulary/web",
+    "dev:api": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run dev --workspace @vocabulary/api",
+    "lint": "oxlint --deny-warnings apps packages scripts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "fake-indexeddb": "^6.2.4",
+    "oxlint": "^1.75.0",
+    "tsx": "^4.21.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.0"
+  }
+}
