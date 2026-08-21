@@ -2,6 +2,11 @@ import { answersMatch } from './normalization.js'
 import type { SpokenOutcome, SupportedLocale } from './types.js'
 
 export const pronunciationPassThreshold = 80
+const surroundingPunctuation = /^\p{P}+|\p{P}+$/gu
+
+function withoutDisplayPunctuation(value: string): string {
+  return value.trim().replace(surroundingPunctuation, '')
+}
 
 export interface PronunciationDecision {
   outcome: SpokenOutcome
@@ -15,7 +20,11 @@ export function evaluatePronunciation(
   locale: SupportedLocale,
   pronunciationScore: number,
 ): PronunciationDecision {
-  const matchesReference = answersMatch(recognizedText, referenceText, locale)
+  const matchesReference = answersMatch(
+    withoutDisplayPunctuation(recognizedText),
+    withoutDisplayPunctuation(referenceText),
+    locale,
+  )
   const passesPronunciation = pronunciationScore >= pronunciationPassThreshold
 
   return {

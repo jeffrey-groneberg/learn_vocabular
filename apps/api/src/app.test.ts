@@ -14,7 +14,7 @@ const speech: SpeechService = {
     return Buffer.from('audio')
   },
   async assess() {
-    return { recognizedText: 'Apfel', pronunciationScore: 84 }
+    return { recognizedText: 'Apfel.', pronunciationScore: 84 }
   },
 }
 

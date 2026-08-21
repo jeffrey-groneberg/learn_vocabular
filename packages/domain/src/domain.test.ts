@@ -31,6 +31,7 @@ describe('spelling grading', () => {
 describe('pronunciation decisions', () => {
   it('requires both the expected word and a score of at least 80', () => {
     expect(evaluatePronunciation('apple', 'apple', 'en-GB', 80).outcome).toBe('correct')
+    expect(evaluatePronunciation('  „Haus.“  ', 'haus', 'de-DE', 99).outcome).toBe('correct')
     expect(evaluatePronunciation('apple', 'apple', 'en-GB', 79.99).outcome).toBe(
       'pronunciation-retry',
     )
