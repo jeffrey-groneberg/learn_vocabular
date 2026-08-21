@@ -4,8 +4,11 @@ import type {
   PronunciationError,
   PronunciationEvidence,
   PronunciationSoundPosition,
+  PronunciationWordFeedback,
+  SpeechPace,
   SupportedLocale,
 } from '@vocabulary/domain'
+import { pronunciationPassThreshold } from '@vocabulary/domain'
 import {
   AudioConfig,
   AudioInputStream,
@@ -29,13 +32,18 @@ export interface SpeechAssessment extends PronunciationEvidence {
 }
 
 export interface SpeechService {
-  synthesize(text: string, locale: SupportedLocale): Promise<Buffer>
+  synthesize(text: string, locale: SupportedLocale, pace: SpeechPace): Promise<Buffer>
   assess(pcm: ArrayBuffer, reference: string, locale: SupportedLocale): Promise<SpeechAssessment | null>
 }
 
 const voiceByLocale: Record<SupportedLocale, string> = {
-  'en-GB': 'en-GB-SoniaNeural',
+  'en-US': 'en-US-JennyNeural',
   'de-DE': 'de-DE-KatjaNeural',
+}
+
+const rateByPace: Record<SpeechPace, string> = {
+  normal: '-8%',
+  slow: '-28%',
 }
 
 const scoreSchema = z.number().min(0).max(100)
@@ -49,6 +57,25 @@ const azureErrorSchema = z.enum([
   'Monotone',
 ])
 type AzureError = z.infer<typeof azureErrorSchema>
+const breakErrorSchema = z.enum(['None', 'UnexpectedBreak', 'MissingBreak'])
+const intonationErrorSchema = z.enum(['None', 'Monotone'])
+const confidenceSchema = z.number().min(0).max(1)
+const prosodyBreakConfidenceThreshold = 0.75
+
+const prosodyFeedbackSchema = z.object({
+  Break: z
+    .object({
+      ErrorTypes: z.array(breakErrorSchema).optional().default([]),
+      UnexpectedBreak: z.object({ Confidence: confidenceSchema }).optional(),
+      MissingBreak: z.object({ Confidence: confidenceSchema }).optional(),
+    })
+    .optional(),
+  Intonation: z
+    .object({
+      ErrorTypes: z.array(intonationErrorSchema).optional().default([]),
+    })
+    .optional(),
+})
 
 const detailedAssessmentSchema = z.object({
   NBest: z
@@ -58,20 +85,37 @@ const detailedAssessmentSchema = z.object({
           AccuracyScore: scoreSchema,
           FluencyScore: scoreSchema,
           CompletenessScore: scoreSchema,
+          ProsodyScore: scoreSchema,
           PronScore: scoreSchema,
         }),
         Words: z
           .array(
             z.object({
+              Word: z.string().min(1).max(120),
               PronunciationAssessment: z.object({
                 AccuracyScore: scoreSchema,
                 ErrorType: azureErrorSchema,
               }),
+              Feedback: z
+                .object({
+                  Prosody: prosodyFeedbackSchema.optional(),
+                })
+                .optional(),
               Phonemes: z
                 .array(
                   z.object({
+                    Phoneme: z.string().min(1).max(20),
                     PronunciationAssessment: z.object({
                       AccuracyScore: scoreSchema,
+                      NBestPhonemes: z
+                        .array(
+                          z.object({
+                            Phoneme: z.string().min(1).max(20),
+                            Score: scoreSchema,
+                          }),
+                        )
+                        .optional()
+                        .default([]),
                     }),
                   }),
                 )
@@ -93,6 +137,32 @@ const errorMap: Record<Exclude<AzureError, 'None'>, PronunciationError> = {
   UnexpectedBreak: 'unexpected-break',
   MissingBreak: 'missing-break',
   Monotone: 'monotone',
+}
+
+function prosodyErrors(
+  feedback: z.infer<typeof prosodyFeedbackSchema> | undefined,
+): PronunciationError[] {
+  if (!feedback) {
+    return []
+  }
+  const errors: PronunciationError[] = []
+  const breakFeedback = feedback.Break
+  if (
+    breakFeedback?.ErrorTypes.includes('UnexpectedBreak') ||
+    (breakFeedback?.UnexpectedBreak?.Confidence ?? 0) > prosodyBreakConfidenceThreshold
+  ) {
+    errors.push('unexpected-break')
+  }
+  if (
+    breakFeedback?.ErrorTypes.includes('MissingBreak') ||
+    (breakFeedback?.MissingBreak?.Confidence ?? 0) > prosodyBreakConfidenceThreshold
+  ) {
+    errors.push('missing-break')
+  }
+  if (feedback.Intonation?.ErrorTypes.includes('Monotone')) {
+    errors.push('monotone')
+  }
+  return errors
 }
 
 function soundPosition(
@@ -124,26 +194,79 @@ export function parsePronunciationAssessmentJson(json: string): PronunciationEvi
     throw new Error('Pronunciation assessment omitted required scoring details')
   }
   const errors: PronunciationError[] = []
-  for (const word of best.Words) {
-    const error = word.PronunciationAssessment.ErrorType
-    if (error !== 'None' && !errors.includes(errorMap[error])) {
-      errors.push(errorMap[error])
+  const problemWords: PronunciationWordFeedback[] = []
+  for (const [wordIndex, word] of best.Words.entries()) {
+    const azureError = word.PronunciationAssessment.ErrorType
+    const mappedError = azureError === 'None' ? undefined : errorMap[azureError]
+    const detectedErrors = [
+      ...(mappedError ? [mappedError] : []),
+      ...prosodyErrors(word.Feedback?.Prosody),
+    ]
+    for (const error of detectedErrors) {
+      if (!errors.includes(error)) {
+        errors.push(error)
+      }
     }
-  }
 
-  let weakestPhonemeIndex = -1
-  for (let index = 0; index < phonemeScores.length; index += 1) {
-    const score = phonemeScores[index]
-    const weakestScore =
-      weakestPhonemeIndex < 0 ? undefined : phonemeScores[weakestPhonemeIndex]
-    if (
-      score !== undefined &&
-      (weakestScore === undefined || score < weakestScore)
-    ) {
-      weakestPhonemeIndex = index
+    let weakestPhonemeIndex = -1
+    for (let index = 0; index < word.Phonemes.length; index += 1) {
+      const score = word.Phonemes[index]?.PronunciationAssessment.AccuracyScore
+      const weakestScore =
+        weakestPhonemeIndex < 0
+          ? undefined
+          : word.Phonemes[weakestPhonemeIndex]?.PronunciationAssessment.AccuracyScore
+      if (
+        score !== undefined &&
+        (weakestScore === undefined || score < weakestScore)
+      ) {
+        weakestPhonemeIndex = index
+      }
     }
+
+    const weakestPhoneme =
+      weakestPhonemeIndex < 0 ? undefined : word.Phonemes[weakestPhonemeIndex]
+    const weakestSoundScore = weakestPhoneme?.PronunciationAssessment.AccuracyScore
+    const wordSpecificErrors = [
+      ...new Set(detectedErrors.filter((error) => error !== 'monotone')),
+    ]
+    const hasWeakSound =
+      weakestSoundScore !== undefined && weakestSoundScore < pronunciationPassThreshold
+    if (
+      word.PronunciationAssessment.AccuracyScore >= pronunciationPassThreshold &&
+      wordSpecificErrors.length === 0 &&
+      !hasWeakSound
+    ) {
+      continue
+    }
+
+    const heardCandidate = weakestPhoneme?.PronunciationAssessment.NBestPhonemes[0]
+    const heardSound =
+      heardCandidate && heardCandidate.Phoneme !== weakestPhoneme?.Phoneme
+        ? heardCandidate.Phoneme
+        : undefined
+    const weakestSoundPosition = soundPosition(
+      weakestPhonemeIndex,
+      word.Phonemes.length,
+    )
+    problemWords.push({
+      word: word.Word,
+      index: wordIndex,
+      accuracyScore: word.PronunciationAssessment.AccuracyScore,
+      errors: wordSpecificErrors,
+      ...(hasWeakSound && weakestPhoneme && weakestSoundScore !== undefined
+        ? {
+            weakestSound: {
+              expected: weakestPhoneme.Phoneme,
+              ...(heardSound ? { heard: heardSound } : {}),
+              score: weakestSoundScore,
+              ...(weakestSoundPosition
+                ? { position: weakestSoundPosition }
+                : {}),
+            },
+          }
+        : {}),
+    })
   }
-  const weakestSoundPosition = soundPosition(weakestPhonemeIndex, phonemeScores.length)
 
   return {
     scores: {
@@ -151,11 +274,12 @@ export function parsePronunciationAssessmentJson(json: string): PronunciationEvi
       accuracy: best.PronunciationAssessment.AccuracyScore,
       fluency: best.PronunciationAssessment.FluencyScore,
       completeness: best.PronunciationAssessment.CompletenessScore,
+      prosody: best.PronunciationAssessment.ProsodyScore,
       minimumWord: Math.min(...wordScores),
       minimumPhoneme: Math.min(...phonemeScores),
     },
     errors,
-    ...(weakestSoundPosition ? { weakestSoundPosition } : {}),
+    problemWords,
   }
 }
 
@@ -166,6 +290,20 @@ function escapeXml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;')
+}
+
+export function createSpeechSsml(
+  text: string,
+  locale: SupportedLocale,
+  pace: SpeechPace,
+): string {
+  return [
+    `<speak version="1.0" xml:lang="${locale}">`,
+    `<voice name="${voiceByLocale[locale]}">`,
+    `<prosody rate="${rateByPace[pace]}">${escapeXml(text)}</prosody>`,
+    '</voice>',
+    '</speak>',
+  ].join('')
 }
 
 function synthesisPromise(synthesizer: SpeechSynthesizer, ssml: string): Promise<SpeechSynthesisResult> {
@@ -180,6 +318,21 @@ function recognitionPromise(recognizer: SpeechRecognizer): Promise<SpeechRecogni
   })
 }
 
+export function createPronunciationAssessmentConfig(
+  reference: string,
+): PronunciationAssessmentConfig {
+  const assessment = new PronunciationAssessmentConfig(
+    reference,
+    PronunciationAssessmentGradingSystem.HundredMark,
+    PronunciationAssessmentGranularity.Phoneme,
+    true,
+  )
+  assessment.phonemeAlphabet = 'IPA'
+  assessment.nbestPhonemeCount = 5
+  assessment.enableProsodyAssessment = true
+  return assessment
+}
+
 export class AzureSpeechService implements SpeechService {
   private readonly endpoint: URL
   private readonly credential = new DefaultAzureCredential()
@@ -192,22 +345,17 @@ export class AzureSpeechService implements SpeechService {
     return SpeechConfig.fromEndpoint(this.endpoint, this.credential)
   }
 
-  async synthesize(text: string, locale: SupportedLocale): Promise<Buffer> {
+  async synthesize(text: string, locale: SupportedLocale, pace: SpeechPace): Promise<Buffer> {
     return trace.getTracer('vocabulary-speech').startActiveSpan('speech.tts', async (span) => {
       span.setAttribute('app.locale', locale)
+      span.setAttribute('app.tts_pace', pace)
       const config = this.config()
       config.speechSynthesisVoiceName = voiceByLocale[locale]
       config.speechSynthesisOutputFormat =
         SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
       const synthesizer = new SpeechSynthesizer(config)
       try {
-        const ssml = [
-          `<speak version="1.0" xml:lang="${locale}">`,
-          `<voice name="${voiceByLocale[locale]}">`,
-          `<prosody rate="-8%">${escapeXml(text)}</prosody>`,
-          '</voice>',
-          '</speak>',
-        ].join('')
+        const ssml = createSpeechSsml(text, locale, pace)
         const result = await synthesisPromise(synthesizer, ssml)
         if (
           result.reason !== ResultReason.SynthesizingAudioCompleted ||
@@ -244,12 +392,7 @@ export class AzureSpeechService implements SpeechService {
         const config = this.config()
         config.speechRecognitionLanguage = locale
         const recognizer = new SpeechRecognizer(config, AudioConfig.fromStreamInput(stream))
-        const assessment = new PronunciationAssessmentConfig(
-          reference,
-          PronunciationAssessmentGradingSystem.HundredMark,
-          PronunciationAssessmentGranularity.Phoneme,
-          true,
-        )
+        const assessment = createPronunciationAssessmentConfig(reference)
         assessment.applyTo(recognizer)
 
         try {

@@ -16,20 +16,27 @@ afterEach(async () => {
 })
 
 describe('speech API', () => {
-  it('reuses generated speech from IndexedDB', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(new Blob(['generated-audio'], { type: 'audio/mpeg' }), {
-        status: 200,
-        headers: { 'content-type': 'audio/mpeg' },
-      }),
-    )
+  it('reuses normal and slow generated speech from separate cache entries', async () => {
+    const fetchMock = vi.fn().mockImplementation((_input, init: RequestInit | undefined) => {
+      const request = JSON.parse(String(init?.body)) as { pace: string }
+      return Promise.resolve(
+        new Response(new Blob([`${request.pace}-audio`], { type: 'audio/mpeg' }), {
+          status: 200,
+          headers: { 'content-type': 'audio/mpeg' },
+        }),
+      )
+    })
     vi.stubGlobal('fetch', fetchMock)
 
-    const first = await requestSpeech('apple', 'en-GB')
-    const second = await requestSpeech('apple', 'en-GB')
+    const first = await requestSpeech('apple', 'en-US')
+    const second = await requestSpeech('apple', 'en-US')
+    const slowFirst = await requestSpeech('apple', 'en-US', 'slow')
+    const slowSecond = await requestSpeech('apple', 'en-US', 'slow')
 
-    expect(await first.text()).toBe('generated-audio')
-    expect(await second.text()).toBe('generated-audio')
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(await first.text()).toBe('normal-audio')
+    expect(await second.text()).toBe('normal-audio')
+    expect(await slowFirst.text()).toBe('slow-audio')
+    expect(await slowSecond.text()).toBe('slow-audio')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })

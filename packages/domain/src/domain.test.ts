@@ -24,11 +24,11 @@ describe('spelling grading', () => {
   it('accepts one insertion, deletion, substitution, or transposition as a minor typo', () => {
     expect(damerauLevenshtein('house', 'hosue')).toBe(1)
     expect(gradeSpelling('Apfl', 'Apfel', 'de-DE').outcome).toBe('minor-typo')
-    expect(gradeSpelling('Haus', 'house', 'en-GB').outcome).toBe('incorrect')
+    expect(gradeSpelling('Haus', 'house', 'en-US').outcome).toBe('incorrect')
   })
 
   it('treats exact normalized spelling as correct', () => {
-    expect(gradeSpelling('  APPLE ', 'apple', 'en-GB').outcome).toBe('correct')
+    expect(gradeSpelling('  APPLE ', 'apple', 'en-US').outcome).toBe('correct')
   })
 })
 
@@ -39,22 +39,33 @@ describe('pronunciation decisions', () => {
       accuracy: 80,
       fluency: 80,
       completeness: 80,
+      prosody: 80,
       minimumWord: 80,
       minimumPhoneme: 80,
     },
     errors: [],
+    problemWords: [],
   }
 
-  it('requires the expected word and every pronunciation check to reach 80', () => {
-    expect(evaluatePronunciation('apple', 'apple', 'en-GB', passingEvidence).outcome).toBe(
-      'correct',
-    )
+  it('requires the expected answer and every pronunciation check to reach 80', () => {
+    expect(
+      evaluatePronunciation('The apple is red.', 'The apple is red.', 'en-US', passingEvidence)
+        .outcome,
+    ).toBe('correct')
+    expect(
+      evaluatePronunciation(
+        'Turn left, then stop!',
+        'Turn left then stop.',
+        'en-US',
+        passingEvidence,
+      ).outcome,
+    ).toBe('correct')
     expect(
       evaluatePronunciation('  „Haus.“  ', 'haus', 'de-DE', passingEvidence).outcome,
     ).toBe('correct')
 
     for (const check of pronunciationChecks) {
-      const decision = evaluatePronunciation('apple', 'apple', 'en-GB', {
+      const decision = evaluatePronunciation('apple', 'apple', 'en-US', {
         ...passingEvidence,
         scores: { ...passingEvidence.scores, [check]: 79.99 },
       })
@@ -65,9 +76,9 @@ describe('pronunciation decisions', () => {
     }
   })
 
-  it('fails service-reported errors and still distinguishes a different word', () => {
+  it('fails service-reported errors and still distinguishes a different answer', () => {
     expect(
-      evaluatePronunciation('apple', 'apple', 'en-GB', {
+      evaluatePronunciation('apple', 'apple', 'en-US', {
         ...passingEvidence,
         errors: ['insertion'],
       }),
@@ -75,7 +86,7 @@ describe('pronunciation decisions', () => {
       outcome: 'pronunciation-retry',
       errors: ['insertion'],
     })
-    expect(evaluatePronunciation('pear', 'apple', 'en-GB', passingEvidence).outcome).toBe(
+    expect(evaluatePronunciation('pear', 'apple', 'en-US', passingEvidence).outcome).toBe(
       'different-word',
     )
   })

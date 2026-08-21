@@ -148,7 +148,7 @@ async function main() {
         'content-type': 'application/json',
         traceparent: `00-${traceId}-${randomBytes(8).toString('hex')}-01`,
       },
-      body: JSON.stringify({ text: 'apple', locale: 'en-GB' }),
+      body: JSON.stringify({ text: 'apple', locale: 'en-US' }),
       signal: AbortSignal.timeout(30_000),
     })
     if (!tts.ok || !tts.headers.get('content-type')?.startsWith('audio/')) {

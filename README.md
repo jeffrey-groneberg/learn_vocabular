@@ -1,21 +1,25 @@
 # Vocabulary Voice Tutor
 
-A private, mobile-first English and German vocabulary tutor for one learner.
-Word lists, progress, and a bounded generated-cue cache stay in IndexedDB on the
-iPhone. Azure AI Speech plays an audio-only cue and checks a short, deliberate
-English pronunciation attempt; recorded microphone audio is kept only in memory
-for that request and is then discarded.
+A private, mobile-first English and German language tutor for one learner.
+Practice sets, progress, and a bounded generated-audio cache stay in IndexedDB
+on the iPhone. Azure AI Speech plays an audio-only cue and checks a deliberate
+English word or sentence; recorded microphone audio is kept only in memory for
+that request and is then discarded.
 
 ## What the learner can do
 
-- Create and edit English/German word or short-phrase lists.
+- Create and edit English/German practice sets containing words or complete sentences.
 - Practise English → German, German → English, or a mix.
-- Begin every word with a replayable audio cue while both written words stay
-  hidden.
-- Record the English word for pronunciation feedback in every direction. Every
-  aggregate, word, and individual-sound check must reach `80/100`.
-- In English → German, write the German translation and the English word. In
-  German → English, write the English word.
+- Begin every item with a replayable audio cue while complete written answers
+  stay hidden, apart from exact problem-word feedback during a retry.
+- Record the English word or sentence for pronunciation feedback in every
+  direction. Every aggregate, prosody, word, and individual-sound check must
+  reach `80/100`. Feedback identifies each problem word, its exact error, and
+  the expected and likely heard IPA sounds when Azure provides them.
+- After a pronunciation retry or answer mismatch, replay the complete English
+  model answer at normal or slower pace.
+- In English → German, write the German translation and the English answer. In
+  German → English, write the English answer.
 - Check spelling locally. Exact spelling passes; one edit is shown as a minor
   typo; larger differences are marked for another look.
 - Install the PWA on an iPhone and keep all learning records on that device.
@@ -215,11 +219,12 @@ destroy, secret rotation, firewall recovery, and rollback details.
 4. Allow microphone access only when prompted for a speaking attempt.
 
 Exercise content, typed answers, aggregate practice results, and up to 256
-generated replay blobs stay in the iPhone's IndexedDB. The oldest generated
-audio is removed as the cache fills. Microphone recordings are never persisted.
+generated cue or model-playback blobs stay in the iPhone's IndexedDB. Normal and
+slower versions use separate cache entries, and the oldest generated audio is
+removed as the cache fills. Microphone recordings are never persisted.
 The gateway and API disable request-body logging. Telemetry is limited to route,
 locale, mode, duration, retry/outcome category, release, and anonymous
-per-launch identifiers; it excludes words, translations, transcripts, typed
+per-launch identifiers; it excludes exercise text, translations, transcripts, typed
 answers, scores, audio, codes, cookies, tokens, addresses, and rate-limit keys.
 
 The family code intentionally has no minimum strength rule. Five failures from

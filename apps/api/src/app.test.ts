@@ -21,10 +21,12 @@ const speech: SpeechService = {
         accuracy: 86,
         fluency: 88,
         completeness: 100,
+        prosody: 83,
         minimumWord: 85,
         minimumPhoneme: 81,
       },
       errors: [],
+      problemWords: [],
     }
   },
 }
@@ -64,12 +66,39 @@ describe('internal Speech API', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/tts',
-      payload: { text: 'apple', locale: 'en-GB' },
+      payload: { text: 'apple', locale: 'en-US' },
     })
     expect(response.statusCode).toBe(404)
   })
 
-  it('withholds recognized text in Test mode', async () => {
+  it('defaults normal synthesis and forwards an explicit slow pace', async () => {
+    const paces: string[] = []
+    const app = await buildApi(config, {
+      ...speech,
+      async synthesize(_text, _locale, pace) {
+        paces.push(pace)
+        return Buffer.from('audio')
+      },
+    })
+    apps.push(app)
+
+    for (const payload of [
+      { text: 'apple', locale: 'en-US' },
+      { text: 'apple', locale: 'en-US', pace: 'slow' },
+    ]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/tts',
+        headers: { 'x-internal-gateway-key': config.internalApiCredential },
+        payload,
+      })
+      expect(response.statusCode).toBe(200)
+    }
+
+    expect(paces).toEqual(['normal', 'slow'])
+  })
+
+  it('returns score evidence without echoing the recognized transcript', async () => {
     const app = await buildApi(config, speech)
     apps.push(app)
     const response = await app.inject({
@@ -80,7 +109,7 @@ describe('internal Speech API', () => {
         'x-internal-gateway-key': config.internalApiCredential,
         'x-vocabulary-reference': referenceHeader('Apfel'),
         'x-vocabulary-locale': 'de-DE',
-        'x-vocabulary-mode': 'test',
+        'x-vocabulary-mode': 'learn',
       },
       payload: wav(),
     })
@@ -93,11 +122,13 @@ describe('internal Speech API', () => {
         accuracy: 86,
         fluency: 88,
         completeness: 100,
+        prosody: 83,
         minimumWord: 85,
         minimumPhoneme: 81,
       },
       failedChecks: [],
       errors: [],
+      problemWords: [],
     })
   })
 
@@ -112,11 +143,25 @@ describe('internal Speech API', () => {
             accuracy: 90,
             fluency: 90,
             completeness: 100,
+            prosody: 90,
             minimumWord: 88,
             minimumPhoneme: 72,
           },
           errors: [],
-          weakestSoundPosition: 'end',
+          problemWords: [
+            {
+              word: 'apple',
+              index: 0,
+              accuracyScore: 88,
+              errors: [],
+              weakestSound: {
+                expected: 'l',
+                heard: 'ɹ',
+                score: 72,
+                position: 'end',
+              },
+            },
+          ],
         }
       },
     })
@@ -128,7 +173,7 @@ describe('internal Speech API', () => {
         'content-type': 'audio/wav',
         'x-internal-gateway-key': config.internalApiCredential,
         'x-vocabulary-reference': referenceHeader('apple'),
-        'x-vocabulary-locale': 'en-GB',
+        'x-vocabulary-locale': 'en-US',
         'x-vocabulary-mode': 'learn',
       },
       payload: wav(),
@@ -139,7 +184,12 @@ describe('internal Speech API', () => {
       outcome: 'pronunciation-retry',
       pronunciationScore: 90,
       failedChecks: ['minimumPhoneme'],
-      weakestSoundPosition: 'end',
+      problemWords: [
+        {
+          word: 'apple',
+          weakestSound: { expected: 'l', heard: 'ɹ', position: 'end' },
+        },
+      ],
     })
   })
 

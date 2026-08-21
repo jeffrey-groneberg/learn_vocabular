@@ -9,10 +9,14 @@ import {
 } from './types.js'
 
 export const pronunciationPassThreshold = 80
-const surroundingPunctuation = /^\p{P}+|\p{P}+$/gu
+const apostrophePunctuation = /['’ʼ]/gu
+const displayPunctuation = /\p{P}+/gu
 
 function withoutDisplayPunctuation(value: string): string {
-  return value.trim().replace(surroundingPunctuation, '')
+  return value
+    .replace(apostrophePunctuation, '')
+    .replace(displayPunctuation, ' ')
+    .trim()
 }
 
 export interface PronunciationDecision {

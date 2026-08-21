@@ -40,7 +40,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -49,7 +50,8 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+textarea:focus-visible {
   outline: 3px solid var(--coral);
   outline-offset: 3px;
 }
@@ -86,7 +88,8 @@ h2 {
   letter-spacing: -0.025em;
 }
 
-input {
+input,
+textarea {
   width: 100%;
   min-height: 52px;
   border: 2px solid var(--rule);
@@ -97,7 +100,13 @@ input {
   font-size: 1.05rem;
 }
 
-input:focus {
+textarea {
+  line-height: 1.4;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
   border-color: var(--cobalt);
 }
 
@@ -799,6 +808,72 @@ label {
   margin-top: 0.8rem;
 }
 
+.model-audio-panel {
+  margin-top: 0.8rem;
+  padding: 0.9rem;
+  color: var(--cobalt-dark);
+  background: var(--paper);
+  border: 2px solid var(--cobalt-dark);
+}
+
+.model-audio-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.model-audio-heading svg {
+  flex: 0 0 auto;
+  color: var(--cobalt);
+}
+
+.model-audio-heading strong,
+.model-audio-heading small {
+  display: block;
+}
+
+.model-audio-heading small {
+  max-width: 48ch;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.model-audio-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.model-audio-button {
+  min-width: 0;
+  min-height: 64px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.model-audio-button-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.model-audio-button-copy > span {
+  overflow-wrap: anywhere;
+}
+
+.model-audio-button-copy small {
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 450;
+}
+
+.model-audio-error {
+  margin: 0.65rem 0 0;
+  color: var(--coral-action);
+  line-height: 1.35;
+}
+
 .record-button {
   min-height: 76px;
   display: grid;
@@ -969,13 +1044,13 @@ label {
   font-weight: 450;
 }
 
-.spelling-step input {
+.spelling-step textarea {
   min-height: 62px;
   margin-top: 0.45rem;
   font-size: 1.35rem;
 }
 
-.spelling-step input[readonly] {
+.spelling-step textarea[readonly] {
   color: #105d43;
   background: var(--green-light);
   border-color: var(--green);
@@ -1018,6 +1093,67 @@ label {
   max-width: 52ch;
   margin: 0.35rem 0 0;
   line-height: 1.4;
+}
+
+.speech-problem-sheet {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--rule);
+}
+
+.speech-problem-sheet > small {
+  color: var(--cobalt-dark);
+  font-weight: 680;
+}
+
+.speech-problem-list {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.speech-problem-list li {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.speech-problem-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.speech-problem-heading {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.speech-problem-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.speech-problem-heading span {
+  flex: 0 0 auto;
+  color: var(--cobalt);
+  font-size: 0.73rem;
+  font-variation-settings: 'wght' 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.speech-problem-list p {
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.speech-problem-list li > small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.73rem;
 }
 
 .speech-score-sheet {
@@ -1450,6 +1586,14 @@ footer {
 
   .practice-actions.ready-to-speak {
     grid-template-columns: 0.72fr 1.28fr;
+  }
+
+  .model-audio-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .practice-actions.retry-actions {
+    grid-template-columns: 1.28fr 0.72fr;
   }
 
   .practice-actions.ready-to-speak .skip-button {

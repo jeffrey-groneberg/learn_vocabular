@@ -1,4 +1,9 @@
-import type { AttemptSummary, ExerciseSet, SupportedLocale } from '@vocabulary/domain'
+import type {
+  AttemptSummary,
+  ExerciseSet,
+  SpeechPace,
+  SupportedLocale,
+} from '@vocabulary/domain'
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 
 interface CachedSpeechAudio {
@@ -64,20 +69,21 @@ export function getDatabase(): Promise<IDBPDatabase<VocabularyDatabase>> {
 }
 
 // Bump this when the server-side voice, speaking rate, or audio format changes.
-const speechSynthesisRevision = 'v1'
+const speechSynthesisRevision = 'v2'
 
-function speechAudioKey(text: string, locale: SupportedLocale): string {
-  return JSON.stringify([speechSynthesisRevision, locale, text.normalize('NFC')])
+function speechAudioKey(text: string, locale: SupportedLocale, pace: SpeechPace): string {
+  return JSON.stringify([speechSynthesisRevision, locale, pace, text.normalize('NFC')])
 }
 
 export async function getCachedSpeechAudio(
   text: string,
   locale: SupportedLocale,
+  pace: SpeechPace = 'normal',
 ): Promise<Blob | undefined> {
   const database = await getDatabase()
   const transaction = database.transaction('speechAudio', 'readwrite')
   const store = transaction.objectStore('speechAudio')
-  const key = speechAudioKey(text, locale)
+  const key = speechAudioKey(text, locale, pace)
   const cached = await store.get(key)
 
   if (!cached) {
@@ -100,6 +106,7 @@ export async function saveCachedSpeechAudio(
   text: string,
   locale: SupportedLocale,
   audio: Blob,
+  pace: SpeechPace = 'normal',
 ): Promise<void> {
   if (audio.size === 0 || !audio.type.startsWith('audio/')) {
     throw new TypeError('Cached speech must be a non-empty audio blob')
@@ -108,7 +115,7 @@ export async function saveCachedSpeechAudio(
   const database = await getDatabase()
   const transaction = database.transaction('speechAudio', 'readwrite')
   const store = transaction.objectStore('speechAudio')
-  const key = speechAudioKey(text, locale)
+  const key = speechAudioKey(text, locale, pace)
   await store.put({ key, audio, lastAccessedAt: Date.now() })
 
   let entriesToRemove = (await store.count()) - speechAudioCacheEntryLimit

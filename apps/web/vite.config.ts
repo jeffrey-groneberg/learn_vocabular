@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'Vocabulary Voice Tutor',
         short_name: 'Vocabulary Tutor',
-        description: 'Private English and German vocabulary practice.',
+        description: 'Private English and German word and sentence practice.',
         theme_color: '#1747d1',
         background_color: '#f4f0e7',
         display: 'standalone',

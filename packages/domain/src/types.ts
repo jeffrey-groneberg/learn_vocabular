@@ -1,6 +1,8 @@
-export const supportedLocales = ['en-GB', 'de-DE'] as const
+export const supportedLocales = ['en-US', 'de-DE'] as const
+export const speechPaces = ['normal', 'slow'] as const
 
 export type SupportedLocale = (typeof supportedLocales)[number]
+export type SpeechPace = (typeof speechPaces)[number]
 export type PracticeDirection = 'english-to-german' | 'german-to-english' | 'mixed'
 export type PracticeMode = 'learn' | 'test'
 export type VocabularyLanguage = 'english' | 'german'
@@ -49,6 +51,7 @@ export const pronunciationChecks = [
   'accuracy',
   'fluency',
   'completeness',
+  'prosody',
   'minimumWord',
   'minimumPhoneme',
 ] as const
@@ -72,21 +75,37 @@ export interface PronunciationScores {
   accuracy: number
   fluency: number
   completeness: number
+  prosody: number
   minimumWord: number
   minimumPhoneme: number
+}
+
+export interface PronunciationSoundFeedback {
+  expected: string
+  heard?: string
+  score: number
+  position?: PronunciationSoundPosition
+}
+
+export interface PronunciationWordFeedback {
+  word: string
+  index: number
+  accuracyScore: number
+  errors: PronunciationError[]
+  weakestSound?: PronunciationSoundFeedback
 }
 
 export interface PronunciationEvidence {
   scores: PronunciationScores
   errors: PronunciationError[]
-  weakestSoundPosition?: PronunciationSoundPosition
+  problemWords: PronunciationWordFeedback[]
 }
 
 export interface PronunciationFeedback {
   scores: PronunciationScores | null
   failedChecks: PronunciationCheck[]
   errors: PronunciationError[]
-  weakestSoundPosition?: PronunciationSoundPosition
+  problemWords: PronunciationWordFeedback[]
 }
 
 export type SpellingOutcome = 'correct' | 'minor-typo' | 'incorrect'

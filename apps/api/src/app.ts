@@ -2,7 +2,6 @@ import {
   evaluatePronunciation,
   pronunciationMetadataSchema,
   ttsRequestSchema,
-  type PracticeMode,
   type SupportedLocale,
 } from '@vocabulary/domain'
 import Fastify from 'fastify'
@@ -11,8 +10,8 @@ import type { ApiConfig } from './config.js'
 import type { SpeechService } from './speech.js'
 import { parsePcmWav } from './wav.js'
 
-const maximumAudioBytes = 300_000
-const maximumDurationMs = 8_250
+const maximumAudioBytes = 500_000
+const maximumDurationMs = 15_250
 
 function validCredential(actual: string | string[] | undefined, expected: string): boolean {
   if (typeof actual !== 'string') {
@@ -69,7 +68,11 @@ export async function buildApi(config: ApiConfig, speech: SpeechService) {
       return reply.status(400).send({ error: 'invalid-request' })
     }
     try {
-      const audio = await speech.synthesize(parsed.data.text, parsed.data.locale)
+      const audio = await speech.synthesize(
+        parsed.data.text,
+        parsed.data.locale,
+        parsed.data.pace,
+      )
       reply.header('content-type', 'audio/mpeg')
       reply.header('content-length', audio.byteLength)
       return reply.send(audio)
@@ -113,6 +116,7 @@ export async function buildApi(config: ApiConfig, speech: SpeechService) {
           scores: null,
           failedChecks: [],
           errors: [],
+          problemWords: [],
         }
       }
       const decision = evaluatePronunciation(
@@ -121,17 +125,13 @@ export async function buildApi(config: ApiConfig, speech: SpeechService) {
         parsed.data.locale as SupportedLocale,
         result,
       )
-      const mode = parsed.data.mode as PracticeMode
       return {
         outcome: decision.outcome,
         pronunciationScore: result.scores.overall,
         scores: result.scores,
         failedChecks: decision.failedChecks,
         errors: decision.errors,
-        ...(result.weakestSoundPosition
-          ? { weakestSoundPosition: result.weakestSoundPosition }
-          : {}),
-        ...(mode === 'learn' ? { recognizedText: result.recognizedText } : {}),
+        problemWords: result.problemWords,
       }
     } catch {
       return reply.status(503).send({ error: 'speech-unavailable' })

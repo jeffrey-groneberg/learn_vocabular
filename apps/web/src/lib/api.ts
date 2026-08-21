@@ -1,6 +1,7 @@
 import {
   pronunciationResponseSchema,
   type PracticeMode,
+  type SpeechPace,
   type SupportedLocale,
 } from '@vocabulary/domain'
 import {
@@ -75,9 +76,13 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function requestSpeech(text: string, locale: SupportedLocale): Promise<Blob> {
+export async function requestSpeech(
+  text: string,
+  locale: SupportedLocale,
+  pace: SpeechPace = 'normal',
+): Promise<Blob> {
   try {
-    const cached = await getCachedSpeechAudio(text, locale)
+    const cached = await getCachedSpeechAudio(text, locale, pace)
     if (cached) {
       return cached
     }
@@ -92,14 +97,14 @@ export async function requestSpeech(text: string, locale: SupportedLocale): Prom
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
-    body: JSON.stringify({ text, locale }),
+    body: JSON.stringify({ text, locale, pace }),
   })
   if (!response.ok) {
     await throwApiError(response)
   }
   const audio = await response.blob()
   try {
-    await saveCachedSpeechAudio(text, locale, audio)
+    await saveCachedSpeechAudio(text, locale, audio, pace)
   } catch (error) {
     if (!(error instanceof DOMException)) {
       throw error

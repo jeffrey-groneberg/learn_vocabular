@@ -2,7 +2,7 @@
   "name": "vocabulary-voice-tutor",
   "version": "0.1.0",
   "private": true,
-  "description": "A private, mobile-first English and German vocabulary tutor.",
+  "description": "A private, mobile-first English and German word and sentence tutor.",
   "type": "module",
   "workspaces": [
     "apps/*",

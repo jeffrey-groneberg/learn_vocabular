@@ -12,7 +12,7 @@ export function createPracticePrompt(
   const english: PracticeWord = {
     language: 'english',
     text: entry.english,
-    locale: 'en-GB',
+    locale: 'en-US',
   }
   const german: PracticeWord = {
     language: 'german',

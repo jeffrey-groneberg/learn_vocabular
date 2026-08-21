@@ -3,9 +3,10 @@ import {
   pronunciationChecks,
   pronunciationErrors,
   pronunciationSoundPositions,
+  speechPaces,
 } from './types.js'
 
-export const localeSchema = z.enum(['en-GB', 'de-DE'])
+export const localeSchema = z.enum(['en-US', 'de-DE'])
 export const practiceModeSchema = z.enum(['learn', 'test'])
 
 const boundedPhraseSchema = z
@@ -25,6 +26,7 @@ const boundedPhraseSchema = z
 export const ttsRequestSchema = z.strictObject({
   text: boundedPhraseSchema,
   locale: localeSchema,
+  pace: z.enum(speechPaces).default('normal'),
 })
 
 export const pronunciationMetadataSchema = z.strictObject({
@@ -40,8 +42,24 @@ export const pronunciationScoresSchema = z.strictObject({
   accuracy: pronunciationScoreSchema,
   fluency: pronunciationScoreSchema,
   completeness: pronunciationScoreSchema,
+  prosody: pronunciationScoreSchema,
   minimumWord: pronunciationScoreSchema,
   minimumPhoneme: pronunciationScoreSchema,
+})
+
+const pronunciationSoundFeedbackSchema = z.strictObject({
+  expected: z.string().min(1).max(20),
+  heard: z.string().min(1).max(20).optional(),
+  score: pronunciationScoreSchema,
+  position: z.enum(pronunciationSoundPositions).optional(),
+})
+
+const pronunciationWordFeedbackSchema = z.strictObject({
+  word: z.string().min(1).max(120),
+  index: z.number().int().nonnegative(),
+  accuracyScore: pronunciationScoreSchema,
+  errors: z.array(z.enum(pronunciationErrors)).max(pronunciationErrors.length),
+  weakestSound: pronunciationSoundFeedbackSchema.optional(),
 })
 
 export const pronunciationResponseSchema = z.strictObject({
@@ -57,8 +75,8 @@ export const pronunciationResponseSchema = z.strictObject({
   scores: pronunciationScoresSchema.nullable(),
   failedChecks: z.array(z.enum(pronunciationChecks)),
   errors: z.array(z.enum(pronunciationErrors)),
-  weakestSoundPosition: z.enum(pronunciationSoundPositions).optional(),
-  recognizedText: z.string().max(120).optional(),
+  problemWords: z.array(pronunciationWordFeedbackSchema).max(120),
+  recognizedText: z.string().max(1000).optional(),
 })
 
 export const sessionRequestSchema = z.strictObject({

@@ -60,14 +60,35 @@ describe('local vocabulary database', () => {
 
     const cached = await getCachedSpeechAudio('Café', 'de-DE')
     expect(await cached?.text()).toBe('generated-audio')
-    expect(await getCachedSpeechAudio('Café', 'en-GB')).toBeUndefined()
+    expect(await getCachedSpeechAudio('Café', 'en-US')).toBeUndefined()
+  })
+
+  it('keeps normal and slow generated speech separate', async () => {
+    await saveCachedSpeechAudio(
+      'apple',
+      'en-US',
+      new Blob(['normal-audio'], { type: 'audio/mpeg' }),
+    )
+    await saveCachedSpeechAudio(
+      'apple',
+      'en-US',
+      new Blob(['slow-audio'], { type: 'audio/mpeg' }),
+      'slow',
+    )
+
+    expect(await (await getCachedSpeechAudio('apple', 'en-US'))?.text()).toBe(
+      'normal-audio',
+    )
+    expect(await (await getCachedSpeechAudio('apple', 'en-US', 'slow'))?.text()).toBe(
+      'slow-audio',
+    )
   })
 
   it('bounds the generated speech cache', async () => {
     for (let index = 0; index <= speechAudioCacheEntryLimit; index += 1) {
       await saveCachedSpeechAudio(
         `word-${index}`,
-        'en-GB',
+        'en-US',
         new Blob([String(index)], { type: 'audio/mpeg' }),
       )
     }
@@ -75,7 +96,7 @@ describe('local vocabulary database', () => {
     const database = await getDatabase()
     expect(await database.count('speechAudio')).toBe(speechAudioCacheEntryLimit)
     expect(
-      await (await getCachedSpeechAudio(`word-${speechAudioCacheEntryLimit}`, 'en-GB'))?.text(),
+      await (await getCachedSpeechAudio(`word-${speechAudioCacheEntryLimit}`, 'en-US'))?.text(),
     ).toBe(String(speechAudioCacheEntryLimit))
   })
 })

@@ -17,7 +17,7 @@ import { createSessionToken, verifySessionToken } from './security/session-token
 import { privateSourceKey, trustedSourceBucket } from './security/source-key.js'
 
 const sessionCookie = '__Host-vocabulary-voice-tutor'
-const maximumAudioBytes = 300_000
+const maximumAudioBytes = 500_000
 const defaultWebDist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 function hasValidSession(request: FastifyRequest, config: GatewayConfig): boolean {
@@ -252,7 +252,7 @@ export async function buildGateway(
     const mode = request.headers['x-vocabulary-mode']
     if (
       !reference ||
-      (locale !== 'en-GB' && locale !== 'de-DE') ||
+      (locale !== 'en-US' && locale !== 'de-DE') ||
       (mode !== 'learn' && mode !== 'test')
     ) {
       return reply.status(400).send({ error: 'invalid-request' })

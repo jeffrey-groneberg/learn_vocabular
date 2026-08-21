@@ -1,5 +1,5 @@
 const targetSampleRate = 16_000
-const maximumAttemptMs = 8_000
+const maximumAttemptMs = 15_000
 
 function downsample(samples: Float32Array, sourceRate: number): Float32Array {
   if (sourceRate === targetSampleRate) {

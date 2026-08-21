@@ -15,6 +15,8 @@ import {
   type PronunciationCheck,
   type PronunciationFeedback,
   type PronunciationScores,
+  type PronunciationWordFeedback,
+  type SpeechPace,
   type SkippedPracticeStep,
   type SpellingOutcome,
   type SpokenOutcome,
@@ -113,7 +115,7 @@ function OfflineNotice({ online }: { online: boolean }) {
   return (
     <div className="offline-notice" role="status">
       <CircleAlert size={18} aria-hidden="true" />
-      Your words are still here. Listening and speaking need an internet connection.
+      Your practice sets are still here. Listening and speaking need an internet connection.
     </div>
   )
 }
@@ -162,7 +164,7 @@ function AccessScreen({
     state === 'unavailable'
       ? 'The private speech service is not available right now.'
       : state === 'expired'
-        ? 'Your 30-day session ended. Sign in again; your word lists are still on this iPhone.'
+        ? 'Your 30-day session ended. Sign in again; your practice sets are still on this iPhone.'
         : null,
   )
   const [submitting, setSubmitting] = useState(false)
@@ -196,9 +198,9 @@ function AccessScreen({
       <main className="access-main">
         <section className="access-card" aria-labelledby="access-title">
           <LockKeyhole className="access-icon" size={30} aria-hidden="true" />
-          <h1 id="access-title">Open your words</h1>
+          <h1 id="access-title">Open your practice sets</h1>
           <p className="lede">
-            Use your family access code. Your word lists and practice history stay on this
+            Use your family access code. Your practice sets and practice history stay on this
             iPhone.
           </p>
           <form onSubmit={submit}>
@@ -242,10 +244,10 @@ function EmptyLibrary({ onCreate }: { onCreate: () => void }) {
         <span>DE</span>
       </div>
       <h2>Your cabinet is empty</h2>
-      <p>Add a short list for the next vocabulary lesson. You can change it at any time.</p>
+      <p>Add words or sentences for the next language lesson. You can change them at any time.</p>
       <button className="primary-button" type="button" onClick={onCreate}>
         <Plus size={20} aria-hidden="true" />
-        Create first word list
+        Create first practice set
       </button>
     </section>
   )
@@ -270,7 +272,7 @@ function LibraryScreen({
     <main className="page-content">
       <div className="page-heading">
         <div>
-          <h1>Word lists</h1>
+          <h1>Practice sets</h1>
           <p>Choose a drawer to practise, or prepare a new one.</p>
         </div>
         <button className="primary-button compact" type="button" onClick={onCreate}>
@@ -292,7 +294,7 @@ function LibraryScreen({
               </div>
               <h2>{exercise.name}</h2>
               <p>
-                {exercise.entries.length} {exercise.entries.length === 1 ? 'word pair' : 'word pairs'}
+                {exercise.entries.length} {exercise.entries.length === 1 ? 'item' : 'items'}
               </p>
               <div className="drawer-ruler" aria-hidden="true">
                 {Array.from({ length: 9 }, (_, tick) => (
@@ -311,7 +313,7 @@ function LibraryScreen({
                 }
               >
                 <BookOpen size={20} aria-hidden="true" />
-                Practise this list
+                Practise this set
               </button>
               <div className="drawer-actions">
                 <button className="text-button" type="button" onClick={() => onEdit(exercise)}>
@@ -354,8 +356,14 @@ function ExerciseEditor({
 
   function changeEntry(id: string, field: 'english' | 'german', value: string) {
     const now = new Date().toISOString()
+    const singleLineValue = value
+      .replaceAll('\r', ' ')
+      .replaceAll('\n', ' ')
+      .replaceAll('\t', ' ')
     setEntries((current) =>
-      current.map((entry) => (entry.id === id ? { ...entry, [field]: value, updatedAt: now } : entry)),
+      current.map((entry) =>
+        entry.id === id ? { ...entry, [field]: singleLineValue, updatedAt: now } : entry,
+      ),
     )
   }
 
@@ -364,15 +372,15 @@ function ExerciseEditor({
     const cleanName = name.trim()
     const completeEntries = entries.filter((entry) => entry.english.trim() || entry.german.trim())
     if (!cleanName) {
-      setError('Give this word list a name.')
+      setError('Give this practice set a name.')
       return
     }
     if (completeEntries.length === 0) {
-      setError('Add at least one English and German word pair.')
+      setError('Add at least one English and German item.')
       return
     }
     if (completeEntries.some((entry) => !entry.english.trim() || !entry.german.trim())) {
-      setError('Complete both sides of every word pair.')
+      setError('Complete both sides of every item.')
       return
     }
 
@@ -395,7 +403,7 @@ function ExerciseEditor({
       await saveExercise(exercise)
       onSaved(exercise)
     } catch {
-      setError('This list could not be saved on the iPhone. Check available storage and try again.')
+      setError('This practice set could not be saved on the iPhone. Check available storage and try again.')
     } finally {
       setSaving(false)
     }
@@ -405,17 +413,17 @@ function ExerciseEditor({
     <main className="page-content narrow-page">
       <button className="back-button" type="button" onClick={onCancel}>
         <ArrowLeft size={19} aria-hidden="true" />
-        Word lists
+        Practice sets
       </button>
       <div className="page-heading">
         <div>
-          <h1>{existing ? 'Edit word list' : 'Build a word list'}</h1>
-          <p>Keep phrases short so speaking feedback stays clear.</p>
+          <h1>{existing ? 'Edit practice set' : 'Build a practice set'}</h1>
+          <p>Add a word or one complete sentence in each language.</p>
         </div>
       </div>
       <form className="editor-form" onSubmit={submit}>
         <div className="field-group">
-          <label htmlFor="set-name">List name</label>
+          <label htmlFor="set-name">Practice set name</label>
           <input
             id="set-name"
             value={name}
@@ -432,32 +440,34 @@ function ExerciseEditor({
         <div className="word-rows">
           {entries.map((entry, index) => (
             <fieldset className="word-row" key={entry.id}>
-              <legend>Word pair {index + 1}</legend>
+              <legend>Item {index + 1}</legend>
               <span className="row-number">{String(index + 1).padStart(2, '0')}</span>
               <label>
                 <span>English</span>
-                <input
-                  lang="en-GB"
+                <textarea
+                  lang="en-US"
                   value={entry.english}
                   onChange={(event) => changeEntry(entry.id, 'english', event.target.value)}
                   maxLength={120}
-                  autoCapitalize="none"
+                  rows={4}
+                  placeholder="English word or sentence"
                 />
               </label>
               <label>
                 <span>German</span>
-                <input
+                <textarea
                   lang="de-DE"
                   value={entry.german}
                   onChange={(event) => changeEntry(entry.id, 'german', event.target.value)}
                   maxLength={120}
-                  autoCapitalize="none"
+                  rows={4}
+                  placeholder="German word or sentence"
                 />
               </label>
               <button
                 className="icon-button remove-row"
                 type="button"
-                aria-label={`Remove word pair ${index + 1}`}
+                aria-label={`Remove item ${index + 1}`}
                 onClick={() =>
                   setEntries((current) =>
                     current.length === 1 ? [blankEntry()] : current.filter((item) => item.id !== entry.id),
@@ -471,7 +481,7 @@ function ExerciseEditor({
         </div>
         <button className="secondary-button add-row" type="button" onClick={() => setEntries((items) => [...items, blankEntry()])}>
           <Plus size={19} aria-hidden="true" />
-          Add another pair
+          Add another item
         </button>
 
         {error ? (
@@ -486,7 +496,7 @@ function ExerciseEditor({
           </button>
           <button className="primary-button" type="submit" disabled={saving}>
             <Save size={19} aria-hidden="true" />
-            {saving ? 'Saving…' : 'Save list'}
+            {saving ? 'Saving…' : 'Save practice set'}
           </button>
         </div>
       </form>
@@ -510,7 +520,7 @@ function PracticeSetup({
     <main className="page-content narrow-page">
       <button className="back-button" type="button" onClick={onBack}>
         <ArrowLeft size={19} aria-hidden="true" />
-        Word lists
+        Practice sets
       </button>
       <div className="page-heading">
         <div>
@@ -518,8 +528,8 @@ function PracticeSetup({
           <p>
             {exercise.entries.length}{' '}
             {exercise.entries.length === 1
-              ? 'word pair is ready.'
-              : 'word pairs are ready.'}
+              ? 'item is ready.'
+              : 'items are ready.'}
           </p>
         </div>
       </div>
@@ -540,7 +550,7 @@ function PracticeSetup({
             <LockKeyhole size={24} aria-hidden="true" />
             <span>
               <strong>Test</strong>
-              <small>Complete every check before either word appears.</small>
+              <small>Get exact pronunciation hints without numeric scores.</small>
             </span>
             <Check size={20} className="choice-check" aria-hidden="true" />
           </label>
@@ -618,7 +628,7 @@ function makePrompts(exercise: ExerciseSet, direction: PracticeDirection): Pract
 
 const spokenMessages: Record<SpokenOutcome, string> = {
   correct: 'That sounded right.',
-  'different-word': 'That sounded like a different English word. Listen again, then try once more.',
+  'different-word': 'That did not match the expected English answer.',
   'pronunciation-retry': 'That needs one more try.',
   'no-speech': 'No clear speech was heard. You can try again.',
   'low-confidence': 'The recording was not clear enough to judge. Try again in a quieter spot.',
@@ -629,9 +639,10 @@ const pronunciationCheckLabels: Record<PronunciationCheck, string> = {
   overall: 'Overall pronunciation',
   accuracy: 'Sound accuracy',
   fluency: 'Smooth speaking',
-  completeness: 'Whole word',
-  minimumWord: 'Word to practise',
-  minimumPhoneme: 'Sound to practise',
+  completeness: 'Complete answer',
+  prosody: 'Rhythm and stress',
+  minimumWord: 'Lowest word score',
+  minimumPhoneme: 'Lowest sound score',
 }
 
 const soundPositionLabels = {
@@ -641,6 +652,17 @@ const soundPositionLabels = {
 } as const
 
 function feedbackHint(feedback: PronunciationFeedback): string {
+  if (feedback.errors.includes('monotone')) {
+    return 'The whole answer sounded too flat. Copy the model’s rise and fall more closely.'
+  }
+  if (feedback.failedChecks.includes('prosody')) {
+    return 'Copy the model answer’s rhythm, stress, and rise and fall more closely.'
+  }
+  if (feedback.problemWords.length > 0) {
+    return feedback.problemWords.length === 1
+      ? 'Fix the marked word, then say the complete answer again.'
+      : 'Fix each marked word, then say the complete answer again.'
+  }
   if (feedback.errors.includes('omission')) {
     return 'A sound or word was left out. Say the whole answer from beginning to end.'
   }
@@ -651,10 +673,7 @@ function feedbackHint(feedback: PronunciationFeedback): string {
     feedback.failedChecks.includes('minimumPhoneme') ||
     feedback.errors.includes('mispronunciation')
   ) {
-    const location = feedback.weakestSoundPosition
-      ? `The ${soundPositionLabels[feedback.weakestSoundPosition]} sound`
-      : 'One sound'
-    return `${location} needs another try. Listen again and copy that part carefully.`
+    return 'One or more sounds need another try. Listen again and copy them carefully.'
   }
   if (feedback.failedChecks.includes('completeness')) {
     return 'Say the whole answer from beginning to end.'
@@ -666,9 +685,6 @@ function feedbackHint(feedback: PronunciationFeedback): string {
   ) {
     return 'Say it smoothly, without a long pause in the middle.'
   }
-  if (feedback.errors.includes('monotone')) {
-    return 'Copy the rise and fall of the example more closely.'
-  }
   if (
     feedback.failedChecks.includes('accuracy') ||
     feedback.failedChecks.includes('minimumWord')
@@ -676,6 +692,39 @@ function feedbackHint(feedback: PronunciationFeedback): string {
     return 'Listen again and match each sound more closely.'
   }
   return 'Listen again, then say the answer a little more clearly.'
+}
+
+function problemWordMessages(problem: PronunciationWordFeedback): string[] {
+  const messages: string[] = []
+  for (const error of problem.errors) {
+    if (error === 'omission') {
+      messages.push('This word was left out.')
+    } else if (error === 'insertion') {
+      messages.push('This extra word was heard. Leave it out on the next try.')
+    } else if (error === 'unexpected-break') {
+      messages.push('There was an unexpected pause before this word. Join it smoothly to the sentence.')
+    } else if (error === 'missing-break') {
+      messages.push('Add a short pause before this word.')
+    } else if (error === 'mispronunciation' && !problem.weakestSound) {
+      messages.push('This word did not match the model pronunciation.')
+    }
+  }
+  const skippedOrInserted =
+    problem.errors.includes('omission') || problem.errors.includes('insertion')
+  if (problem.weakestSound && !skippedOrInserted) {
+    const location = problem.weakestSound.position
+      ? `${soundPositionLabels[problem.weakestSound.position]} `
+      : ''
+    messages.push(
+      problem.weakestSound.heard
+        ? `The ${location}/${problem.weakestSound.expected}/ sound was closer to /${problem.weakestSound.heard}/.`
+        : `The ${location}/${problem.weakestSound.expected}/ sound needs a clearer match.`,
+    )
+  }
+  if (messages.length === 0) {
+    messages.push('This word needs a clearer pronunciation.')
+  }
+  return messages
 }
 
 function checkScore(scores: PronunciationScores, check: PronunciationCheck): number {
@@ -700,13 +749,39 @@ function PronunciationDetails({
       <small>English pronunciation: {Math.round(scores.overall)} / 100</small>
     ) : null
   }
-  if (outcome !== 'pronunciation-retry') {
+  if (outcome !== 'pronunciation-retry' && outcome !== 'different-word') {
     return null
   }
 
   return (
     <>
       <p className="speech-guidance">{feedbackHint(feedback)}</p>
+      {feedback.problemWords.length > 0 ? (
+        <div className="speech-problem-sheet">
+          <small>{feedback.problemWords.length === 1 ? 'Word to fix' : 'Words to fix'}</small>
+          <ol className="speech-problem-list">
+            {feedback.problemWords.map((problem) => (
+              <li key={`${problem.index}-${problem.word}-${problem.errors.join('-') || 'score'}`}>
+                <div className="speech-problem-heading">
+                  <strong>{problem.word}</strong>
+                  <span>Word {problem.index + 1}</span>
+                </div>
+                {problemWordMessages(problem).map((message) => (
+                  <p key={message}>{message}</p>
+                ))}
+                {mode === 'learn' ? (
+                  <small>
+                    Word {Math.round(problem.accuracyScore)} / 100
+                    {problem.weakestSound
+                      ? ` · Sound ${Math.round(problem.weakestSound.score)} / 100`
+                      : ''}
+                  </small>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
       {scores && feedback.failedChecks.length > 0 && mode === 'learn' ? (
         <div className="speech-score-sheet">
           <small>Each check needs 80 / 100.</small>
@@ -761,8 +836,8 @@ function SpellingFeedback({
         <>
           <RotateCcw size={22} aria-hidden="true" />
           <div>
-            <strong>Try the {language} word again</strong>
-            <p>The answer stays hidden until it is correct or you skip this word.</p>
+            <strong>Try the {language} answer again</strong>
+            <p>The correct answer stays hidden until this is right or you skip the item.</p>
           </div>
         </>
       )}
@@ -800,7 +875,8 @@ function PracticeScreen({
   const [currentAttempt, setCurrentAttempt] = useState<AttemptSummary | null>(null)
   const [attempts, setAttempts] = useState<AttemptSummary[]>([])
   const [storageWarning, setStorageWarning] = useState<string | null>(null)
-  const [playing, setPlaying] = useState(false)
+  const [playingPace, setPlayingPace] = useState<SpeechPace | null>(null)
+  const [modelAudioError, setModelAudioError] = useState<string | null>(null)
   const recorder = useRef<PcmRecorder | null>(null)
   const stopTimer = useRef<number | null>(null)
   const completed = useRef(false)
@@ -809,6 +885,7 @@ function PracticeScreen({
   const prompt = prompts[state.itemIndex]!
   const cue = prompt.words[prompt.cueLanguage]
   const spokenAnswer = prompt.words[prompt.spokenLanguage]
+  const playing = playingPace !== null
 
   useEffect(
     () => () => {
@@ -829,6 +906,23 @@ function PracticeScreen({
     }
   }, [attempts, onComplete, state.phase])
 
+  async function playWord(word: PracticeWord, pace: SpeechPace): Promise<void> {
+    const blob = await requestSpeech(word.text, word.locale, pace)
+    const url = URL.createObjectURL(blob)
+    const audio = new Audio(url)
+    try {
+      await new Promise<void>((resolve, reject) => {
+        audio.onended = () => resolve()
+        audio.onerror = () => reject(new Error('Audio playback failed'))
+        void audio.play().catch(reject)
+      })
+    } finally {
+      audio.onended = null
+      audio.onerror = null
+      URL.revokeObjectURL(url)
+    }
+  }
+
   async function playCue() {
     if (!online || playing) {
       return
@@ -837,17 +931,9 @@ function PracticeScreen({
     if (changesState) {
       dispatch({ type: 'PLAY' })
     }
-    setPlaying(true)
+    setPlayingPace('normal')
     try {
-      const blob = await requestSpeech(cue.text, cue.locale)
-      const url = URL.createObjectURL(blob)
-      const audio = new Audio(url)
-      await new Promise<void>((resolve, reject) => {
-        audio.onended = () => resolve()
-        audio.onerror = () => reject(new Error('Audio playback failed'))
-        void audio.play().catch(reject)
-      })
-      URL.revokeObjectURL(url)
+      await playWord(cue, 'normal')
       if (changesState) {
         dispatch({ type: 'PLAY_FINISHED' })
       }
@@ -856,9 +942,30 @@ function PracticeScreen({
         onSessionExpired()
         return
       }
-      dispatch({ type: 'FAIL', message: 'The word could not be played. Check the connection and try again.' })
+      dispatch({ type: 'FAIL', message: 'The audio cue could not be played. Check the connection and try again.' })
     } finally {
-      setPlaying(false)
+      setPlayingPace(null)
+    }
+  }
+
+  async function playModelWord(pace: SpeechPace) {
+    if (!online || playing) {
+      return
+    }
+    setModelAudioError(null)
+    setPlayingPace(pace)
+    try {
+      await playWord(spokenAnswer, pace)
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        onSessionExpired()
+        return
+      }
+      setModelAudioError(
+        'The model answer could not be played. Check the connection and try again.',
+      )
+    } finally {
+      setPlayingPace(null)
     }
   }
 
@@ -886,9 +993,7 @@ function PracticeScreen({
         scores: result.scores,
         failedChecks: result.failedChecks,
         errors: result.errors,
-        ...(result.weakestSoundPosition
-          ? { weakestSoundPosition: result.weakestSoundPosition }
-          : {}),
+        problemWords: result.problemWords,
       })
       const passed = result.outcome === 'correct'
       if (!passed) {
@@ -919,6 +1024,7 @@ function PracticeScreen({
     setSpelling(emptySpellingAnswers())
     setSpellingOutcomes({})
     setHasCheckedSpelling(false)
+    setModelAudioError(null)
     dispatch({ type: 'RECORD' })
     try {
       recorder.current = await PcmRecorder.start()
@@ -1020,12 +1126,15 @@ function PracticeScreen({
     setRetryCount(0)
     setCurrentAttempt(null)
     setStorageWarning(null)
+    setModelAudioError(null)
     attemptRecorded.current = false
     currentAttemptId.current = null
     dispatch({ type: 'NEXT' })
   }
 
   const progress = ((state.itemIndex + (state.phase === 'revealed' ? 1 : 0)) / state.totalItems) * 100
+  const canHearModel =
+    spokenOutcome === 'pronunciation-retry' || spokenOutcome === 'different-word'
 
   return (
     <main className="practice-page">
@@ -1041,7 +1150,7 @@ function PracticeScreen({
       <div
         className="progress-track"
         role="progressbar"
-        aria-label={`Word ${state.itemIndex + 1} of ${state.totalItems}`}
+        aria-label={`Item ${state.itemIndex + 1} of ${state.totalItems}`}
         aria-valuemin={0}
         aria-valuemax={state.totalItems}
         aria-valuenow={state.itemIndex + (state.phase === 'revealed' ? 1 : 0)}
@@ -1058,8 +1167,8 @@ function PracticeScreen({
         <div className="audio-cue">
           <Headphones size={44} strokeWidth={1.8} aria-hidden="true" />
           <div>
-            <strong>Listen to the {languageNames[cue.language]} word</strong>
-            <small>No English or German spelling appears until your checks are complete.</small>
+            <strong>Listen to the {languageNames[cue.language]} cue</strong>
+            <small>Written answers stay hidden except for exact pronunciation feedback.</small>
           </div>
         </div>
         <div className="measurement-line" aria-hidden="true">
@@ -1093,10 +1202,10 @@ function PracticeScreen({
                 <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
                   <Mic size={27} aria-hidden="true" />
                   <span>Speak English</span>
-                  <small>Say the English word · Up to 8 seconds</small>
+                  <small>Say the English answer · Up to 15 seconds</small>
                 </button>
                 <button className="secondary-button skip-button" type="button" onClick={() => skipWord('speaking')}>
-                  Skip this word
+                  Skip this item
                   <ChevronRight size={19} aria-hidden="true" />
                 </button>
               </>
@@ -1149,18 +1258,82 @@ function PracticeScreen({
                 />
               </div>
             </div>
-            <div className="practice-actions ready-to-speak">
-              <button className="secondary-button large-button" type="button" onClick={() => void playCue()} disabled={!online || playing}>
-                <Speaker size={22} aria-hidden="true" />
-                {playing ? 'Playing…' : 'Listen again'}
-              </button>
-              <button className="record-button" type="button" onClick={() => void startRecording()} disabled={!online}>
+            {canHearModel ? (
+              <section className="model-audio-panel" aria-labelledby="model-audio-title">
+                <div className="model-audio-heading">
+                  <Headphones size={25} aria-hidden="true" />
+                  <div>
+                    <strong id="model-audio-title">Compare with the model</strong>
+                    <small>Hear the complete English answer at either pace, then try it again.</small>
+                  </div>
+                </div>
+                <div className="model-audio-actions">
+                  <button
+                    className="secondary-button model-audio-button"
+                    type="button"
+                    onClick={() => void playModelWord('normal')}
+                    disabled={!online || playing}
+                  >
+                    <Speaker size={21} aria-hidden="true" />
+                    <span className="model-audio-button-copy">
+                      <span>
+                        {playingPace === 'normal' ? 'Playing model…' : 'Hear the model answer'}
+                      </span>
+                      <small>Normal pace</small>
+                    </span>
+                  </button>
+                  <button
+                    className="secondary-button model-audio-button"
+                    type="button"
+                    onClick={() => void playModelWord('slow')}
+                    disabled={!online || playing}
+                  >
+                    <Speaker size={21} aria-hidden="true" />
+                    <span className="model-audio-button-copy">
+                      <span>
+                        {playingPace === 'slow' ? 'Playing slowly…' : 'Hear it slowly'}
+                      </span>
+                      <small>Slower model</small>
+                    </span>
+                  </button>
+                </div>
+                {modelAudioError ? (
+                  <p className="model-audio-error" role="alert">
+                    {modelAudioError}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+            <div
+              className={
+                canHearModel
+                  ? 'practice-actions retry-actions'
+                  : 'practice-actions ready-to-speak'
+              }
+            >
+              {!canHearModel ? (
+                <button
+                  className="secondary-button large-button"
+                  type="button"
+                  onClick={() => void playCue()}
+                  disabled={!online || playing}
+                >
+                  <Speaker size={22} aria-hidden="true" />
+                  {playing ? 'Playing…' : 'Listen again'}
+                </button>
+              ) : null}
+              <button
+                className="record-button"
+                type="button"
+                onClick={() => void startRecording()}
+                disabled={!online || playing}
+              >
                 <Mic size={27} aria-hidden="true" />
                 <span>Try speaking again</span>
-                <small>Say the English word · Up to 8 seconds</small>
+                <small>Say the English answer · Up to 15 seconds</small>
               </button>
               <button className="secondary-button skip-button" type="button" onClick={() => skipWord('speaking')}>
-                Skip this word
+                Skip this item
                 <ChevronRight size={19} aria-hidden="true" />
               </button>
             </div>
@@ -1182,22 +1355,25 @@ function PracticeScreen({
             </div>
             <form onSubmit={submitSpelling}>
               <fieldset className="spelling-fields">
-                <legend>Now write {prompt.spellingLanguages.length === 2 ? 'both words' : 'the English word'}</legend>
+                <legend>
+                  Now write{' '}
+                  {prompt.spellingLanguages.length === 2 ? 'both answers' : 'the English answer'}
+                </legend>
                 {prompt.spellingLanguages.map((language, index) => {
                   const word = prompt.words[language]
                   const outcome = spellingOutcomes[language]
                   const detail =
                     language === 'german'
-                      ? 'Write the German meaning of the English cue.'
+                      ? 'Write the German translation of the English cue.'
                       : prompt.direction === 'english-to-german'
-                        ? 'Write the English word you heard.'
+                        ? 'Write the English answer you heard.'
                         : 'Write the English translation of the German cue.'
                   return (
                     <div className="spelling-field" key={language}>
                       <label htmlFor={`spelling-${language}`}>
                         {languageNames[language]} {language === 'german' ? 'translation' : 'spelling'}
                         <small>{detail}</small>
-                        <input
+                        <textarea
                           id={`spelling-${language}`}
                           lang={word.locale}
                           value={spelling[language]}
@@ -1216,10 +1392,11 @@ function PracticeScreen({
                           aria-invalid={outcome ? outcome !== 'correct' : undefined}
                           aria-describedby={outcome ? `spelling-feedback-${language}` : undefined}
                           autoFocus={index === 0}
-                          autoCapitalize="none"
+                          autoCapitalize="sentences"
                           autoCorrect="off"
                           spellCheck={false}
                           maxLength={120}
+                          rows={3}
                         />
                       </label>
                       {outcome ? (
@@ -1243,11 +1420,11 @@ function PracticeScreen({
                     ? 'Check again'
                     : prompt.spellingLanguages.length === 2
                       ? 'Check both answers'
-                      : 'Check English spelling'}
+                      : 'Check English answer'}
                   <ChevronRight size={21} aria-hidden="true" />
                 </button>
                 <button className="secondary-button full-width" type="button" onClick={() => skipWord('spelling')}>
-                  Skip this word
+                  Skip this item
                 </button>
               </div>
             </form>
@@ -1280,10 +1457,10 @@ function PracticeScreen({
                 </p>
               </div>
             </div>
-            <div className="answer-ledger" aria-label="Correct word pair">
+            <div className="answer-ledger" aria-label="Correct English and German answers">
               <div>
                 <span>English</span>
-                <strong lang="en-GB">{prompt.words.english.text}</strong>
+                <strong lang="en-US">{prompt.words.english.text}</strong>
               </div>
               <div>
                 <span>German</span>
@@ -1314,7 +1491,7 @@ function PracticeScreen({
                 {playing ? 'Playing…' : 'Hear the cue again'}
               </button>
               <button className="primary-button" type="button" onClick={next}>
-                {state.itemIndex + 1 === state.totalItems ? 'See results' : 'Next word'}
+                {state.itemIndex + 1 === state.totalItems ? 'See results' : 'Next item'}
                 <ChevronRight size={21} aria-hidden="true" />
               </button>
             </div>
@@ -1364,7 +1541,7 @@ function ResultsScreen({
           <div>
             <h2 id="performance-title">First-try performance</h2>
             <p>
-              {performance.firstTry} of {performance.total} words completed without a retry or skip
+              {performance.firstTry} of {performance.total} items completed without a retry or skip
             </p>
           </div>
           <strong className="performance-score">{performance.percentage}%</strong>
@@ -1393,14 +1570,14 @@ function ResultsScreen({
           </strong>
         </div>
         <div>
-          <span>English spelled exactly</span>
+          <span>English written exactly</span>
           <strong>
             {englishSpellingCorrect}<small> / {attempts.length}</small>
           </strong>
         </div>
         {germanAttempts.length > 0 ? (
           <div>
-            <span>German translated exactly</span>
+            <span>German written exactly</span>
             <strong>
               {germanSpellingCorrect}<small> / {germanAttempts.length}</small>
             </strong>
@@ -1412,7 +1589,7 @@ function ResultsScreen({
         </div>
       </div>
       <section className="word-results" aria-labelledby="word-results-title">
-        <h2 id="word-results-title">Word by word</h2>
+        <h2 id="word-results-title">Item by item</h2>
         <ol className="word-result-list">
           {attempts.map((attempt, index) => {
             const entry = entriesById.get(attempt.entryId)
@@ -1423,7 +1600,7 @@ function ResultsScreen({
               <li key={attempt.id}>
                 <span className="word-result-number">{String(index + 1).padStart(2, '0')}</span>
                 <span className="word-result-pair">
-                  <strong lang="en-GB">{entry.english}</strong>
+                  <strong lang="en-US">{entry.english}</strong>
                   <small lang="de-DE">{entry.german}</small>
                 </span>
                 <span className={`word-result-status status-${attempt.completion}`}>
@@ -1456,7 +1633,7 @@ function ResultsScreen({
       </p>
       <div className="results-actions">
         <button className="secondary-button" type="button" onClick={onDone}>
-          Back to lists
+          Back to practice sets
         </button>
         <button className="primary-button" type="button" onClick={onAgain}>
           <RotateCcw size={19} aria-hidden="true" />
@@ -1473,7 +1650,7 @@ function LoadingScreen() {
       <ShellHeader minimal />
       <main className="loading-main" aria-live="polite">
         <span className="spinner cobalt" aria-hidden="true" />
-        <p>Opening your words…</p>
+        <p>Opening your practice sets…</p>
       </main>
     </div>
   )
@@ -1488,7 +1665,7 @@ function StorageUnavailableScreen() {
           <CircleAlert className="access-icon" size={30} aria-hidden="true" />
           <h1 id="storage-title">Local storage is unavailable</h1>
           <p className="lede">
-            Safari could not open the word lists on this device. Check that private browsing
+            Safari could not open the practice sets on this device. Check that private browsing
             is off and that storage is available, then reload the app.
           </p>
           <button
@@ -1670,7 +1847,7 @@ export default function App() {
       {session === 'local-only' && online ? (
         <div className="offline-notice" role="status">
           <CircleAlert size={18} aria-hidden="true" />
-          The private service cannot be reached. You can still edit local word lists.
+          The private service cannot be reached. You can still edit local practice sets.
         </div>
       ) : null}
       {content}
