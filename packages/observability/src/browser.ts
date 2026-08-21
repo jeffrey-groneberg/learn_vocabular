@@ -56,6 +56,11 @@ export function startBrowserTelemetry(
       enableUnhandledPromiseRejectionTracking: false,
       samplingPercentage: 100,
       correlationHeaderExcludedDomains: ['*.azurecr.io', '*.vault.azure.net'],
+      extensionConfig: {
+        AppInsightsCfgSyncPlugin: {
+          cfgUrl: '',
+        },
+      },
     },
   })
   applicationInsights.addTelemetryInitializer((item) =>
