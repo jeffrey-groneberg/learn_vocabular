@@ -144,39 +144,9 @@ variable "common_tags" {
 }
 
 variable "deploy_workloads" {
-  description = "Set true only after images and Key Vault secrets have been prepared for the workload phase."
+  description = "Set true after one-time workload provisioning. Image releases are managed directly through Container Apps."
   type        = bool
-  default     = false
-}
-
-variable "provision_secrets" {
-  description = "Set true during the reviewed workload phase to create or rotate the four Key Vault values."
-  type        = bool
-  default     = false
-}
-
-variable "web_image_digest" {
-  description = "Immutable fully qualified web image reference, including @sha256 digest."
-  type        = string
-  default     = null
-  nullable    = true
-
-  validation {
-    condition     = var.web_image_digest == null || can(regex("^.+@sha256:[0-9a-f]{64}$", lower(var.web_image_digest)))
-    error_message = "web_image_digest must be a fully qualified immutable image reference ending in @sha256:<64 hexadecimal characters>."
-  }
-}
-
-variable "api_image_digest" {
-  description = "Immutable fully qualified API image reference, including @sha256 digest."
-  type        = string
-  default     = null
-  nullable    = true
-
-  validation {
-    condition     = var.api_image_digest == null || can(regex("^.+@sha256:[0-9a-f]{64}$", lower(var.api_image_digest)))
-    error_message = "api_image_digest must be a fully qualified immutable image reference ending in @sha256:<64 hexadecimal characters>."
-  }
+  default     = true
 }
 
 variable "access_code_hash" {

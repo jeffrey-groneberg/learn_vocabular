@@ -1,11 +1,9 @@
 import {
+  azureResourceNames,
   hiddenPrompt,
   keychainRead,
-  outputValue,
-  prepareLocalState,
   requireCommand,
   run,
-  terraformOutput,
   verifyAzureContext,
 } from './lib/orchestrator.mjs'
 import { randomBytes } from 'node:crypto'
@@ -64,15 +62,31 @@ async function checkTrace(resourceGroup, appName, traceId) {
 }
 
 async function main() {
-  for (const command of ['az', 'terraform']) {
+  for (const command of ['az']) {
     requireCommand(command)
   }
-  prepareLocalState()
   verifyAzureContext()
-  const outputs = terraformOutput()
-  const webUrl = outputValue(outputs, 'web_application_url')
-  const resourceGroup = outputValue(outputs, 'resource_group_name')
-  const resources = outputValue(outputs, 'resource_names')
+  const resources = azureResourceNames()
+  const webFqdn = run(
+    'az',
+    [
+      'containerapp',
+      'show',
+      '--resource-group',
+      resources.resourceGroup,
+      '--name',
+      resources.webApp,
+      '--query',
+      'properties.configuration.ingress.fqdn',
+      '--output',
+      'tsv',
+    ],
+    { capture: true },
+  )
+  if (!webFqdn) {
+    throw new Error('The public Container App FQDN is unavailable')
+  }
+  const webUrl = `https://${webFqdn}`
 
   await expectStatus(`${webUrl}/health/live`, 200)
   const apiFqdn = run(
@@ -81,9 +95,9 @@ async function main() {
       'containerapp',
       'show',
       '--resource-group',
-      resourceGroup,
+      resources.resourceGroup,
       '--name',
-      'vocabulary-api',
+      resources.apiApp,
       '--query',
       'properties.configuration.ingress.fqdn',
       '--output',
@@ -151,7 +165,11 @@ async function main() {
     ) {
       throw new Error('Logout smoke test failed')
     }
-    await checkTrace(resourceGroup, resources.application_insights, traceId)
+    await checkTrace(
+      resources.resourceGroup,
+      resources.applicationInsights,
+      traceId,
+    )
   }
 
   process.stdout.write('Azure smoke checks passed.\n')

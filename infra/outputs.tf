@@ -45,12 +45,3 @@ output "resource_names" {
     application_insights       = azurerm_application_insights.main.name
   }
 }
-
-output "active_image_digests" {
-  description = "Configured immutable workload image references; no secret values are output."
-  value = {
-    web     = var.web_image_digest
-    api     = var.api_image_digest
-    cleanup = var.web_image_digest
-  }
-}

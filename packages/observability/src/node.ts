@@ -71,7 +71,7 @@ export function startNodeTelemetry(role: RuntimeRole): void {
     },
   }
 
-  const release = process.env.RELEASE_DIGEST
+  const release = process.env.RELEASE_ID ?? process.env.RELEASE_DIGEST
   useAzureMonitor({
     azureMonitorExporterOptions: {
       connectionString,

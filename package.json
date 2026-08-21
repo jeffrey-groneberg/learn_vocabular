@@ -12,6 +12,8 @@
     "build": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run build --workspace @vocabulary/web && npm run build --workspace @vocabulary/api",
     "azure:bootstrap": "node scripts/bootstrap-azure.mjs",
     "azure:deploy": "node scripts/deploy-azure.mjs",
+    "azure:provision-workloads": "node scripts/provision-workloads.mjs",
+    "azure:rollback": "node scripts/rollback-azure.mjs",
     "azure:smoke": "node scripts/smoke-azure.mjs",
     "azure:update-admin-cidr": "node scripts/update-admin-cidr.mjs",
     "dev": "npm run build --workspace @vocabulary/domain && npm run build --workspace @vocabulary/observability && npm run dev --workspace @vocabulary/web",

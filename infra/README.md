@@ -54,11 +54,15 @@ chmod 600 infra/terraform.tfvars
 directory on FileVault-encrypted storage, restrict its permissions, and make
 only encrypted backups. Never commit, email, or copy state unencrypted.
 
-## Two-phase deployment
+## Infrastructure and release boundary
 
-First review a bootstrap plan with `provision_secrets = false` and
-`deploy_workloads = false`. It creates the shared platform without creating
-Container Apps that reference unavailable images.
+Terraform owns the stable Azure topology and workload configuration. It does
+not own application releases. The Container App and job resources ignore only
+their container image fields; ingress, identities, secrets, environment
+settings, probes, scaling, networking, and schedules remain Terraform-managed.
+
+First review a bootstrap plan with `deploy_workloads = false`. It creates the
+shared platform without Container Apps.
 
 ```sh
 terraform -chdir=infra fmt -check -recursive
@@ -68,31 +72,38 @@ terraform -chdir=infra plan -out=state/bootstrap.tfplan
 terraform -chdir=infra apply state/bootstrap.tfplan
 ```
 
-For the workload phase, build and test Linux `amd64` images locally, sign in to
-the selected-network registry from the permitted `/32`, push Git-SHA-tagged
-images, and resolve each tag to an immutable `@sha256:` digest. Keep the
-non-secret digest manifest under ignored `infra/state/`; never use `latest`.
-
-Store an encoded salted scrypt family-code hash, random cookie-signing key,
-rate-limit HMAC pepper, and random 256-bit gateway credential in macOS
-Keychain. Export the four values only for the reviewed Terraform command:
+Provision workloads and the first release once:
 
 ```sh
-export TF_VAR_access_code_hash="$(security find-generic-password -s vocab-access-code-hash -w)"
-export TF_VAR_cookie_signing_key="$(security find-generic-password -s vocab-cookie-signing-key -w)"
-export TF_VAR_rate_limit_pepper="$(security find-generic-password -s vocab-rate-limit-pepper -w)"
-export TF_VAR_gateway_api_credential="$(security find-generic-password -s vocab-gateway-api-credential -w)"
-terraform -chdir=infra plan -out=state/workloads.tfplan
-terraform -chdir=infra apply state/workloads.tfplan
-unset TF_VAR_access_code_hash TF_VAR_cookie_signing_key TF_VAR_rate_limit_pepper TF_VAR_gateway_api_credential
+npm run azure:provision-workloads
 ```
 
-Before that plan, set both switches to `true`, provide the web and API digest
-variables, and use a new `secret_rotation_version` when rotating a secret. The
-no-ingress cleanup job deliberately reuses the web image and starts its separate
-maintenance entry point.
-Terraform enforces the complete workload input set. The secrets use provider
-write-only fields, so the values are not retained in state.
+The Azure API requires an image when a Container App is created. This command
+therefore builds and tests the initial Linux `amd64` images, publishes
+one-time `:bootstrap` references, and presents a saved Terraform plan for the
+Container Apps, job, and Key Vault values. After that initial apply, it updates
+all three workloads directly to immutable `@sha256:` references and changes
+the ignored local `deploy_workloads` setting to `true`.
+
+Store the encoded salted scrypt family-code hash, random cookie-signing key,
+rate-limit HMAC pepper, and random 256-bit gateway credential in macOS
+Keychain. The provisioning and infrastructure scripts expose those values to
+Terraform only as ephemeral environment variables. Provider write-only fields
+keep them out of state.
+
+For every later application release, use:
+
+```sh
+npm run azure:deploy
+```
+
+The release command does not call Terraform or write Terraform variables. It
+builds, tests, and pushes Git-SHA-tagged images, resolves immutable digests,
+shows the exact live-to-proposed image set, and requires the operator to type
+`deploy`. Azure Container Apps creates the new app revisions directly; the
+no-ingress cleanup job receives the same web image and keeps its maintenance
+entry point. A partial update is restored automatically to the pre-release
+image set. Current and previous manifests are kept under ignored `infra/state/`.
 
 ## Operations and recovery
 
@@ -102,8 +113,16 @@ plane operations. Then update `admin_ipv4_cidr`, create a saved Terraform plan,
 and apply it immediately to reconcile all four data-plane firewalls and remove
 the old address. Do not leave the transient ARM change in place.
 
-Use the same reviewed saved-plan flow for image digest updates and rollback:
-set a previously known digest, run `plan -out`, review, then `apply` that plan.
+Terraform should run after provisioning only for an infrastructure or runtime
+configuration change. Never use it to publish or roll back an image. Run
+`npm run azure:rollback` to review and restore the previous immutable image set
+directly through Container Apps.
+
+Infrastructure plans require the four Keychain-backed ephemeral secret
+variables while `deploy_workloads = true`; the repository scripts supply them
+without printing them. Increment `secret_rotation_version` only for an
+intentional Key Vault rotation.
+
 Use `terraform import` only to recover a known existing resource, after taking
 an encrypted state backup. Restore state only from an encrypted backup after
 checking its permissions and matching subscription. `terraform destroy` is a

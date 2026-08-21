@@ -95,7 +95,7 @@ resource "azurerm_container_app" "web" {
 
     container {
       name   = "gateway"
-      image  = var.web_image_digest
+      image  = local.bootstrap_web_image
       cpu    = 0.5
       memory = "1Gi"
 
@@ -155,11 +155,6 @@ resource "azurerm_container_app" "web" {
         value = azurerm_application_insights.main.connection_string
       }
 
-      env {
-        name  = "RELEASE_DIGEST"
-        value = var.web_image_digest
-      }
-
       liveness_probe {
         transport               = "HTTP"
         port                    = 8080
@@ -191,9 +186,12 @@ resource "azurerm_container_app" "web" {
   }
 
   lifecycle {
+    # Application releases update only this field directly through Container Apps.
+    ignore_changes = [template[0].container[0].image]
+
     precondition {
       condition     = local.workload_inputs_ready
-      error_message = "deploy_workloads requires provision_secrets, all ephemeral secret inputs, and immutable image digests."
+      error_message = "deploy_workloads requires all four ephemeral secret inputs."
     }
   }
 
@@ -244,7 +242,7 @@ resource "azurerm_container_app" "api" {
 
     container {
       name   = "speech-api"
-      image  = var.api_image_digest
+      image  = local.bootstrap_api_image
       cpu    = 0.5
       memory = "1Gi"
 
@@ -276,11 +274,6 @@ resource "azurerm_container_app" "api" {
       env {
         name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
         value = azurerm_application_insights.main.connection_string
-      }
-
-      env {
-        name  = "RELEASE_DIGEST"
-        value = var.api_image_digest
       }
 
       env {
@@ -319,9 +312,12 @@ resource "azurerm_container_app" "api" {
   }
 
   lifecycle {
+    # Application releases update only this field directly through Container Apps.
+    ignore_changes = [template[0].container[0].image]
+
     precondition {
       condition     = local.workload_inputs_ready
-      error_message = "deploy_workloads requires provision_secrets, all ephemeral secret inputs, and immutable image digests."
+      error_message = "deploy_workloads requires all four ephemeral secret inputs."
     }
   }
 
@@ -359,7 +355,7 @@ resource "azurerm_container_app_job" "cleanup" {
   template {
     container {
       name   = "cleanup"
-      image  = var.web_image_digest
+      image  = local.bootstrap_web_image
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -389,18 +385,16 @@ resource "azurerm_container_app_job" "cleanup" {
         name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
         value = azurerm_application_insights.main.connection_string
       }
-
-      env {
-        name  = "RELEASE_DIGEST"
-        value = var.web_image_digest
-      }
     }
   }
 
   lifecycle {
+    # Application releases update only this field directly through Container Apps.
+    ignore_changes = [template[0].container[0].image]
+
     precondition {
       condition     = local.workload_inputs_ready
-      error_message = "deploy_workloads requires provision_secrets, all ephemeral secret inputs, and immutable image digests."
+      error_message = "deploy_workloads requires all four ephemeral secret inputs."
     }
   }
 

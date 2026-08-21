@@ -20,8 +20,10 @@ RUN npm run build --workspace @vocabulary/domain \
   && npm prune --omit=dev --workspaces --include-workspace-root
 
 FROM node:24.14.0-alpine3.23 AS runtime
+ARG RELEASE_ID
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV RELEASE_ID=$RELEASE_ID
 WORKDIR /app
 
 COPY --from=build --chown=node:node /workspace/node_modules ./node_modules

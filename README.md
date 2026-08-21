@@ -118,8 +118,8 @@ terraform -chdir=infra validate
 ## Mac-only Azure provisioning
 
 No GitHub workflow, OIDC identity, repository hook, or cloud build is used.
-Everything is planned, reviewed, built, pushed, and applied from this Mac with
-the signed-in Azure CLI identity.
+Infrastructure changes and application releases are reviewed separately on this
+Mac with the signed-in Azure CLI identity.
 
 1. Copy `infra/terraform.tfvars.example` to the ignored
    `infra/terraform.tfvars`.
@@ -134,22 +134,41 @@ npm run azure:bootstrap
 
 Bootstrap prompts invisibly for the family code, keeps the code and its salted
 scrypt hash only in macOS Keychain, and generates three independent random
-keys there. Only the hash is deployed to Key Vault. Bootstrap creates and
-displays a saved Terraform plan and applies only after the operator types
-`apply`.
+keys there. It creates the shared Azure platform with a saved Terraform plan
+and applies only after the operator types `apply`.
 
-After shared infrastructure exists:
+Provision the Container Apps, Key Vault values, and first release once:
+
+```sh
+npm run azure:provision-workloads
+```
+
+This is the only application-image flow that invokes Terraform, because Azure
+requires an image when each Container App resource is first created. Terraform
+uses one-time `:bootstrap` references, then the script immediately pins the
+running workloads to immutable digests. Terraform deliberately ignores later
+image changes while continuing to own ingress, identities, secrets, scaling,
+probes, networking, and the cleanup schedule.
+
+For every later application release:
 
 ```sh
 npm run azure:deploy
 ```
 
 Deployment refuses a dirty Git tree unless `--allow-dirty` is explicit. It runs
-the project gates, builds Linux `amd64` images locally, starts hardened local
-containers, pushes Git-SHA tags to the selected-network ACR, resolves immutable
-digests, displays a saved Terraform workload plan, and applies only that
-approved plan. The previous digest manifest remains under ignored
-`infra/state/` for a reviewed rollback.
+the project gates, builds and hardens Linux `amd64` images locally, pushes
+Git-SHA tags, resolves immutable digests, and displays the live-to-proposed
+Container Apps image changes. After the operator types `deploy`, it updates the
+API, web app, and cleanup job directly through Azure CLI. It never invokes
+Terraform. Current and previous release manifests remain under ignored
+`infra/state/`.
+
+Roll back to the recorded previous immutable release without Terraform:
+
+```sh
+npm run azure:rollback
+```
 
 If the residential address changes, determine the new address yourself and run:
 
@@ -178,8 +197,10 @@ of prompting:
 npm run azure:smoke -- --keychain
 ```
 
-This verifies public web health, external API isolation, family session
-behavior, TTS, logout, and correlated gateway/API/Speech telemetry.
+This queries Azure directly and verifies public web health, external API
+isolation, family session behavior, TTS, logout, and correlated
+gateway/API/Speech telemetry. It does not invoke Terraform or read Terraform
+state.
 
 See [`infra/README.md`](infra/README.md) for state backup, restore, import,
 destroy, secret rotation, firewall recovery, and rollback details.

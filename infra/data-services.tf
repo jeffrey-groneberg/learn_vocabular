@@ -69,7 +69,7 @@ resource "azurerm_cognitive_account" "speech" {
 }
 
 resource "azurerm_key_vault_secret" "access_code_hash" {
-  count = var.provision_secrets ? 1 : 0
+  count = var.deploy_workloads ? 1 : 0
 
   name             = "access-code-hash"
   key_vault_id     = azurerm_key_vault.main.id
@@ -81,13 +81,13 @@ resource "azurerm_key_vault_secret" "access_code_hash" {
   lifecycle {
     precondition {
       condition     = var.access_code_hash != null
-      error_message = "access_code_hash must be supplied ephemerally when provision_secrets is true."
+      error_message = "access_code_hash must be supplied ephemerally when deploy_workloads is true."
     }
   }
 }
 
 resource "azurerm_key_vault_secret" "cookie_signing_key" {
-  count = var.provision_secrets ? 1 : 0
+  count = var.deploy_workloads ? 1 : 0
 
   name             = "cookie-signing-key"
   key_vault_id     = azurerm_key_vault.main.id
@@ -99,13 +99,13 @@ resource "azurerm_key_vault_secret" "cookie_signing_key" {
   lifecycle {
     precondition {
       condition     = var.cookie_signing_key != null
-      error_message = "cookie_signing_key must be supplied ephemerally when provision_secrets is true."
+      error_message = "cookie_signing_key must be supplied ephemerally when deploy_workloads is true."
     }
   }
 }
 
 resource "azurerm_key_vault_secret" "rate_limit_pepper" {
-  count = var.provision_secrets ? 1 : 0
+  count = var.deploy_workloads ? 1 : 0
 
   name             = "rate-limit-pepper"
   key_vault_id     = azurerm_key_vault.main.id
@@ -117,13 +117,13 @@ resource "azurerm_key_vault_secret" "rate_limit_pepper" {
   lifecycle {
     precondition {
       condition     = var.rate_limit_pepper != null
-      error_message = "rate_limit_pepper must be supplied ephemerally when provision_secrets is true."
+      error_message = "rate_limit_pepper must be supplied ephemerally when deploy_workloads is true."
     }
   }
 }
 
 resource "azurerm_key_vault_secret" "gateway_api_credential" {
-  count = var.provision_secrets ? 1 : 0
+  count = var.deploy_workloads ? 1 : 0
 
   name             = "gateway-api-credential"
   key_vault_id     = azurerm_key_vault.main.id
@@ -135,7 +135,7 @@ resource "azurerm_key_vault_secret" "gateway_api_credential" {
   lifecycle {
     precondition {
       condition     = var.gateway_api_credential != null
-      error_message = "gateway_api_credential must be supplied ephemerally when provision_secrets is true."
+      error_message = "gateway_api_credential must be supplied ephemerally when deploy_workloads is true."
     }
   }
 }

@@ -4,19 +4,14 @@ name_prefix      = "vocabtutor"
 environment      = "prod"
 admin_ipv4_cidr  = "8.8.8.8/32" # Replace; this is only a syntactically valid public /32 example.
 
-# First apply: leave both switches false. This provisions the secure shared
-# platform, identities, private networking, RBAC, registry, and monitoring.
-provision_secrets = false
-deploy_workloads  = false
+# Leave false for the shared-platform bootstrap. The one-time
+# azure:provision-workloads command changes the ignored local copy to true.
+# Terraform then owns stable workload infrastructure but deliberately ignores
+# image revisions, which are released directly through Azure Container Apps.
+deploy_workloads = false
 
-# Workload apply: source these non-secret digests from an ignored local digest
-# manifest and pass the four secret values as ephemeral environment variables.
-#
-# provision_secrets     = true
-# deploy_workloads      = true
+# Increment only when intentionally rotating the four Key Vault values.
 # secret_rotation_version = 1
-# web_image_digest      = "vocabtutorprodacr.azurecr.io/vocabulary-web@sha256:<64-lowercase-hex>"
-# api_image_digest      = "vocabtutorprodacr.azurecr.io/vocabulary-api@sha256:<64-lowercase-hex>"
-#
+
 # Optional low-volume operational alert recipient:
 # alert_email = "operator@example.com"

@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  deploymentSecrets,
   outputValue,
   prepareLocalState,
   requireCommand,
@@ -90,13 +91,16 @@ async function main() {
   )
 
   const planPath = resolve(stateDirectory, 'admin-cidr.tfplan')
-  terraform(['plan', '-input=false', '-out', planPath])
-  if (!(await showAndApprovePlan(planPath))) {
+  const terraformEnvironment = { ...process.env, ...deploymentSecrets() }
+  terraform(['plan', '-input=false', '-out', planPath], {
+    env: terraformEnvironment,
+  })
+  if (!(await showAndApprovePlan(planPath, terraformEnvironment))) {
     throw new Error(
       'Reconciliation plan was not approved. The temporary ARM additions remain; rerun this command promptly.',
     )
   }
-  terraform(['apply', '-input=false', planPath])
+  terraform(['apply', '-input=false', planPath], { env: terraformEnvironment })
   process.stdout.write(`Administrator allowlists now contain only ${newCidr}.\n`)
 }
 

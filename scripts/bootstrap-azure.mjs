@@ -14,6 +14,7 @@ import {
   showAndApprovePlan,
   stateDirectory,
   terraform,
+  terraformBoolean,
   verifyAzureContext,
 } from './lib/orchestrator.mjs'
 
@@ -55,6 +56,11 @@ async function main() {
   prepareLocalState()
   chmodSync(resolve(infraDirectory, 'terraform.tfvars'), 0o600)
   verifyAzureContext()
+  if (terraformBoolean('deploy_workloads')) {
+    throw new Error(
+      'Workloads are already enabled in the local infrastructure config; bootstrap cannot be rerun.',
+    )
+  }
   await ensureSecrets(process.argv.includes('--rotate-secrets'))
 
   run('npm', ['run', 'typecheck'], { cwd: repoRoot })
@@ -71,8 +77,6 @@ async function main() {
     planPath,
     '-var',
     'deploy_workloads=false',
-    '-var',
-    'provision_secrets=false',
   ])
   if (!(await showAndApprovePlan(planPath))) {
     throw new Error('Bootstrap plan was not approved')
@@ -86,7 +90,9 @@ async function main() {
   ) {
     throw new Error('Local state protection was not confirmed')
   }
-  process.stdout.write('Bootstrap complete. Run npm run azure:deploy to publish the first release.\n')
+  process.stdout.write(
+    'Bootstrap complete. Run npm run azure:provision-workloads to create the workloads and publish the first release.\n',
+  )
 }
 
 await main().catch((error) => {
